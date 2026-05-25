@@ -1206,12 +1206,7 @@ for (const image of images.slice(0, 3)) {
           </div>
           <h2 className="text-4xl md:text-5xl font-bold tracking-tight leading-tight">{t.heroTitle}</h2>
           <p className="mt-5 text-lg text-slate-600 leading-8">{t.heroText}</p>
-          <div className="mt-5 grid sm:grid-cols-3 gap-2 max-w-xl">
-            <Feature icon={<MapPin size={18} />} title={t.cityBoards} text={t.cityBoardsText} />
-            <Feature icon={<ShieldCheck size={18} />} title={t.safetyFirst} text={t.safetyFirstText} />
-            <Feature icon={<Upload size={18} />} title={t.easyPosting} text={t.easyPostingText} />
           </div>
-        </div>
         <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-5">
           <div className="rounded-2xl bg-slate-100 p-5">
             <p className="text-sm font-semibold text-slate-500 mb-2">{t.examplePost}</p>
