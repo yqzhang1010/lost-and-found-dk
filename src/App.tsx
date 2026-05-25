@@ -103,7 +103,7 @@ const translations = {
     close: "Close",
     formTitle: "Post a lost or found item",
     formHelp: "Create a post with details, location and photos. Your post will be stored securely in the cloud.",
-    missingFields: "Please fill in title, description, email and manage code.",
+    missingFields: "Please fill in title and description.",
     contactMissingFields: "Please fill in your email and message.",
     postedSuccessfully: "Posted successfully!",
     postedHelp: "Your post is now visible at the top of the list.",
@@ -223,7 +223,7 @@ const translations = {
     close: "Luk",
     formTitle: "Opret et opslag om mistet eller fundet ting",
     formHelp: "Opret et opslag med detaljer, placering og billeder. Dit opslag gemmes sikkert i skyen.",
-    missingFields: "Udfyld venligst titel, beskrivelse, e-mail og administrationskode.",
+    missingFields: "Udfyld venligst titel og beskrivelse.",
     contactMissingFields: "Udfyld venligst din e-mail og besked.",
     postedSuccessfully: "Opslaget er oprettet!",
     postedHelp: "Dit opslag er nu synligt øverst på listen.",
@@ -1023,7 +1023,7 @@ async function logout() {
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (!form.title.trim() || !form.description.trim() || !form.contact.trim()) {
+    if (!form.title.trim() || !form.description.trim()) {
       setFormError(t.missingFields);
       return;
     }
@@ -1073,7 +1073,7 @@ for (const image of images.slice(0, 3)) {
       category: form.category,
       date: form.date || new Date().toISOString().slice(0, 10),
       description: form.description.trim(),
-      contact: form.contact.trim(),
+      contact: user.email || "",
       location: form.location.trim(),
       resolved: false,
       image: uploadedImageUrls[0],
@@ -1396,6 +1396,7 @@ for (const image of images.slice(0, 3)) {
       onImageFiles={(files) => handleFiles(files, setForm)}
       submitLabel={t.submit}
       hideManageCode
+      hideContact
     />
   </SimpleModal>
 )}
@@ -1657,6 +1658,7 @@ function PostForm({
   hideType = false,
   hideDate = false,
   hideManageCode = false,
+  hideContact = false,
 }: {
   form: FormState;
   setForm: React.Dispatch<React.SetStateAction<FormState>>;
@@ -1667,6 +1669,7 @@ function PostForm({
   hideType?: boolean;
   hideDate?: boolean;
   hideManageCode?: boolean;
+  hideContact?: boolean;
 }) {
   const previewImages = form.images.length ? form.images : form.image ? [form.image] : [];
   return (
@@ -1689,7 +1692,9 @@ function PostForm({
       </select>
       {!hideDate && <input className="rounded-xl border border-slate-200 px-3 py-3" type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />}
       <input className="rounded-xl border border-slate-200 px-3 py-3" placeholder={t.locationPlaceholder} value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} />
-      <input className="rounded-xl border border-slate-200 px-3 py-3" placeholder={t.emailPlaceholder} value={form.contact} onChange={(e) => setForm({ ...form, contact: e.target.value })} />
+      {!hideContact && (
+        <input className="rounded-xl border border-slate-200 px-3 py-3" placeholder={t.emailPlaceholder} value={form.contact} onChange={(e) => setForm({ ...form, contact: e.target.value })} />
+      )}
       {!hideManageCode && (
         <div>
           <input className="w-full rounded-xl border border-slate-200 px-3 py-3" placeholder={t.manageCodePlaceholder} value={form.manageCode} onChange={(e) => setForm({ ...form, manageCode: e.target.value })} />
