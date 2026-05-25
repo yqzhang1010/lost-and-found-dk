@@ -4,6 +4,7 @@ import type { User } from "@supabase/supabase-js";
 import {
   Bookmark,
   CheckCircle2,
+  Clock3,
   Filter,
   Flag,
   Globe2,
@@ -26,9 +27,7 @@ type PostType = "Lost" | "Found";
 type SortOption = "newest" | "oldest" | "lost" | "found";
 
 type Post = {
-  id: number | string;
-  user_id?: string;
-  status?: "open" | "resolved" | "archived" | "deleted";
+  id: number;
   saved?: boolean;
   type: PostType;
   title: string;
@@ -42,18 +41,6 @@ type Post = {
   image?: string;
   images?: string[];
   manageCode?: string;
-};
-
-type Message = {
-  id: string;
-  post_id: string;
-  sender_name?: string | null;
-  sender_email: string;
-  message: string;
-  created_at: string;
-  posts?: {
-    title: string;
-  };
 };
 
 type FormState = {
@@ -77,7 +64,7 @@ const translations = {
     postItem: "Post item",
     languageBadge: "English · Danish friendly",
     heroTitle: "Lost something in Denmark? Let the community help.",
-    heroText: "Post or find lost items across Denmark by city, category, date, and location.",
+    heroText: "Post lost or found items by city, category, date and location. This prototype is designed for foreigners, students and visitors who may not know the local system.",
     cityBoards: "City boards",
     cityBoardsText: "Copenhagen, Aarhus, Odense and more",
     safetyFirst: "Safety first",
@@ -98,11 +85,11 @@ const translations = {
     contactFormMessage: "Message to poster",
     sendMessage: "Send message",
     messageSent: "Message sent!",
-    messageSentHelp: "Your message has been delivered to the poster securely through LostAndFoundDK.",
+    messageSentHelp: "Prototype: in the real version, this message would be forwarded without revealing the poster's email.",
     contactPrivacy: "The poster's email is hidden. Messages are sent through the website.",
     close: "Close",
     formTitle: "Post a lost or found item",
-    formHelp: "Create a post with details, location and photos. Your post will be stored securely in the cloud.",
+    formHelp: "This first version stores posts only in the browser session. Later we can connect it to a database.",
     missingFields: "Please fill in title, description, email and manage code.",
     contactMissingFields: "Please fill in your email and message.",
     postedSuccessfully: "Posted successfully!",
@@ -111,8 +98,8 @@ const translations = {
     locationPlaceholder: "Exact location",
     emailPlaceholder: "Email contact",
     descPlaceholder: "Description: where, when, what it looks like...",
-    imageUploadTitle: "Upload images",
-    imageUploadHelp: "Upload up to 3 clear photos to help others identify the item.",
+    imageUploadTitle: "Image upload coming next",
+    imageUploadHelp: "For now you can paste an image URL below.",
     imageUrlPlaceholder: "Paste image URL",
     officialReminder: "Important items like passports, ID cards and bank cards should also be reported to Danish police (114).",
     privacyReminder: "Privacy reminder: do not post CPR numbers, passport numbers, bank card numbers or other sensitive personal information.",
@@ -140,38 +127,35 @@ const translations = {
     manageCodePlaceholder: "Manage code, for example 1234",
     manageCodeHelp: "Use this code later to mark the post as resolved or reopen it.",
     wrongManageCode: "Wrong manage code.",
-    savedLocally: "Posts are securely stored in the cloud and synced across devices.",
+    savedLocally: "Posts are saved locally in this browser for this prototype.",
     chooseImage: "Choose images",
     imageCount: "Up to 3 images",
     nextImage: "Next",
     previousImage: "Previous",
     managePostTitle: "Manage post",
     managePostHelp: "Enter the manage code you created when posting.",
-    manageOwnerHelp: "You are signed in as the owner of this post. You can edit, resolve or delete it.",
-    ownerOnlyAction: "Only the owner of this post can manage it.",
     confirm: "Confirm",
     editPost: "Edit post",
     saveChanges: "Save changes",
     editedSuccessfully: "Post updated",
-    editedHelp: "Your changes have been saved securely in the cloud.",
+    editedHelp: "Your changes have been saved in this browser prototype.",
     deletePost: "Delete post",
     confirmDeleteTitle: "Delete this post?",
     confirmDeleteButton: "Yes, delete permanently",
     confirmDeleteHelp: "This cannot be undone in this prototype.",
     cancel: "Cancel",
     deletedSuccessfully: "Post deleted",
-    deletedHelp: "The post has been removed from the public board.",
+    deletedHelp: "The post has been removed from this browser prototype.",
     reportPost: "Report post",
     reportTitle: "Report this post",
     reportReason: "Reason for report",
-    reportHelp: "Thank you. Reports can be reviewed by moderators to keep the community safe.",
+    reportHelp: "Prototype: in the real version, reports would be reviewed by moderators.",
     reportSent: "Report sent",
     reportMissingReason: "Please enter a reason for the report.",
     savePost: "Save post",
     savedPost: "Saved",
     showSavedOnly: "Show saved only",
     showAllPosts: "Show all posts",
-    myPosts: "My posts",
     noResults: "No matching posts found",
     noResultsHelp: "Try another city, category or keyword.",
     clearFilters: "Clear filters",
@@ -197,7 +181,7 @@ const translations = {
     postItem: "Opret opslag",
     languageBadge: "Engelsk · Dansk venlig",
     heroTitle: "Har du mistet noget i Danmark? Lad fællesskabet hjælpe.",
-    heroText: "Opret eller find mistede genstande i hele Danmark efter by, kategori, dato og sted.",
+    heroText: "Opret opslag om mistede eller fundne ting efter by, kategori, dato og sted. Denne prototype er lavet til udlændinge, studerende og besøgende, som ikke kender det lokale system.",
     cityBoards: "Byopslag",
     cityBoardsText: "København, Aarhus, Odense og flere",
     safetyFirst: "Sikkerhed først",
@@ -218,11 +202,11 @@ const translations = {
     contactFormMessage: "Besked til opretteren",
     sendMessage: "Send besked",
     messageSent: "Beskeden er sendt!",
-    messageSentHelp: "Din besked er sendt sikkert til opretteren gennem LostAndFoundDK.",
+    messageSentHelp: "Prototype: i den rigtige version videresendes beskeden uden at vise opretterens e-mail.",
     contactPrivacy: "Opretterens e-mail er skjult. Beskeder sendes gennem hjemmesiden.",
     close: "Luk",
     formTitle: "Opret et opslag om mistet eller fundet ting",
-    formHelp: "Opret et opslag med detaljer, placering og billeder. Dit opslag gemmes sikkert i skyen.",
+    formHelp: "Denne første version gemmer kun opslag i browsersessionen. Senere kan vi forbinde den til en database.",
     missingFields: "Udfyld venligst titel, beskrivelse, e-mail og administrationskode.",
     contactMissingFields: "Udfyld venligst din e-mail og besked.",
     postedSuccessfully: "Opslaget er oprettet!",
@@ -231,8 +215,8 @@ const translations = {
     locationPlaceholder: "Præcis placering",
     emailPlaceholder: "E-mail kontakt",
     descPlaceholder: "Beskrivelse: hvor, hvornår, hvordan det ser ud...",
-    imageUploadTitle: "Upload billeder",
-    imageUploadHelp: "Upload op til 3 tydelige billeder, så andre lettere kan genkende genstanden.",
+    imageUploadTitle: "Billedupload kommer snart",
+    imageUploadHelp: "Indsæt et billede-link nedenfor indtil videre.",
     imageUrlPlaceholder: "Indsæt billede-link",
     officialReminder: "Vigtige genstande som pas, ID-kort og bankkort bør også anmeldes til dansk politi (114).",
     privacyReminder: "Privatlivspåmindelse: skriv ikke CPR-numre, pasnumre, kortnumre eller andre følsomme personoplysninger.",
@@ -260,38 +244,35 @@ const translations = {
     manageCodePlaceholder: "Administrationskode, fx 1234",
     manageCodeHelp: "Brug denne kode senere til at markere opslaget som løst eller genåbne det.",
     wrongManageCode: "Forkert administrationskode.",
-    savedLocally: "Opslag gemmes sikkert i skyen og synkroniseres på tværs af enheder.",
+    savedLocally: "Opslag gemmes lokalt i denne browser i denne prototype.",
     chooseImage: "Vælg billeder",
     imageCount: "Op til 3 billeder",
     nextImage: "Næste",
     previousImage: "Forrige",
     managePostTitle: "Administrer opslag",
     managePostHelp: "Indtast administrationskoden, du oprettede ved opslaget.",
-    manageOwnerHelp: "Du er logget ind som ejeren af dette opslag. Du kan redigere, løse eller slette det.",
-    ownerOnlyAction: "Kun ejeren af dette opslag kan administrere det.",
     confirm: "Bekræft",
     editPost: "Rediger opslag",
     saveChanges: "Gem ændringer",
     editedSuccessfully: "Opslaget er opdateret",
-    editedHelp: "Dine ændringer er gemt sikkert i skyen.",
+    editedHelp: "Dine ændringer er gemt i denne browserprototype.",
     deletePost: "Slet opslag",
     confirmDeleteTitle: "Slet dette opslag?",
     confirmDeleteButton: "Ja, slet permanent",
     confirmDeleteHelp: "Dette kan ikke fortrydes i denne prototype.",
     cancel: "Annuller",
     deletedSuccessfully: "Opslaget er slettet",
-    deletedHelp: "Opslaget er fjernet fra den offentlige opslagstavle.",
+    deletedHelp: "Opslaget er fjernet fra denne browserprototype.",
     reportPost: "Anmeld opslag",
     reportTitle: "Anmeld dette opslag",
     reportReason: "Årsag til anmeldelse",
-    reportHelp: "Tak. Anmeldelser kan gennemgås af moderatorer for at holde fællesskabet sikkert.",
+    reportHelp: "Prototype: i den rigtige version vil anmeldelser blive gennemgået af moderatorer.",
     reportSent: "Anmeldelse sendt",
     reportMissingReason: "Indtast venligst en årsag til anmeldelsen.",
     savePost: "Gem opslag",
     savedPost: "Gemt",
     showSavedOnly: "Vis kun gemte",
     showAllPosts: "Vis alle opslag",
-    myPosts: "Mine opslag",
     noResults: "Ingen matchende opslag fundet",
     noResultsHelp: "Prøv en anden by, kategori eller søgning.",
     clearFilters: "Nulstil filtre",
@@ -449,33 +430,6 @@ function normalizePost(post: Post): Post {
   };
 }
 
-function mapSupabasePost(row: any): Post {
-  const imageRows = Array.isArray(row.post_images) ? row.post_images : [];
-  const images = imageRows
-    .map((imageRow: any) => imageRow.image_url)
-    .filter(Boolean);
-
-  const primaryImage = images[0] || fallbackImage;
-
-  return {
-    id: row.id,
-    user_id: row.user_id || undefined,
-    status: row.status || "open",
-    type: row.type,
-    title: row.title,
-    city: row.city,
-    category: row.category,
-    date: row.created_at ? String(row.created_at).slice(0, 10) : new Date().toISOString().slice(0, 10),
-    description: row.description,
-    contact: row.contact_email || "",
-    location: row.location || "",
-    resolved: row.status === "resolved",
-    image: primaryImage,
-    images,
-    manageCode: row.manage_token_hash || "auth-owner",
-  };
-}
-
 function daysBetween(dateString: string, now = new Date()) {
   const postDate = new Date(`${dateString}T00:00:00`);
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -507,7 +461,6 @@ function filterPosts(
 ) {
   const { city, category, query, showResolved, showArchived, showSavedOnly } = filters;
   return postsToFilter.filter((post) => {
-    if (post.status === "deleted") return false;
     const searchText = `${post.title} ${post.description} ${post.city} ${post.category} ${post.location || ""}`.toLowerCase();
     return (
       (city === "All cities" || post.city === city) &&
@@ -520,7 +473,7 @@ function filterPosts(
   });
 }
 
-function formatRelativeDate(dateString: string, t: (typeof translations)[Language]) {
+function formatRelativeDate(dateString: string, t: typeof translations.en) {
   const days = daysBetween(dateString);
   if (days <= 0) return t.today;
   if (days === 1) return t.yesterday;
@@ -594,7 +547,6 @@ export default function LostAndFoundDK() {
   const [showResolved, setShowResolved] = useState(true);
   const [showArchived, setShowArchived] = useState(false);
   const [showSavedOnly, setShowSavedOnly] = useState(false);
-  const [showMyPostsOnly, setShowMyPostsOnly] = useState(false);
   const [sortBy, setSortBy] = useState<SortOption>("newest");
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
@@ -602,8 +554,6 @@ export default function LostAndFoundDK() {
   const [contactForm, setContactForm] = useState({ name: "", email: "", message: "" });
   const [contactError, setContactError] = useState("");
   const [showMessageSent, setShowMessageSent] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [showMessages, setShowMessages] = useState(false);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [formError, setFormError] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
@@ -624,20 +574,10 @@ export default function LostAndFoundDK() {
   const [loginMessage, setLoginMessage] = useState("");
   const [sendingLogin, setSendingLogin] = useState(false);
   const [loginCooldown, setLoginCooldown] = useState(0);
-  const [showPostForm, setShowPostForm] = useState(false);
 
   const cityOptions = ["All cities", ...cities];
   const categoryOptions = ["All categories", ...categories];
-  const filteredPosts = useMemo(() => {
-    const basePosts = showMyPostsOnly && user
-      ? posts.filter((post) => post.user_id === user.id)
-      : posts;
-
-    return sortPosts(
-      filterPosts(basePosts, { city, category, query, showResolved, showArchived, showSavedOnly }),
-      sortBy
-    );
-  }, [posts, city, category, query, showResolved, showArchived, showSavedOnly, sortBy, showMyPostsOnly, user]);
+  const filteredPosts = useMemo(() => sortPosts(filterPosts(posts, { city, category, query, showResolved, showArchived, showSavedOnly }), sortBy), [posts, city, category, query, showResolved, showArchived, showSavedOnly, sortBy]);
   const totalPosts = posts.length;
   const resolvedPosts = posts.filter((post) => post.resolved).length;
   const activeCities = new Set(posts.map((post) => post.city)).size;
@@ -646,6 +586,7 @@ export default function LostAndFoundDK() {
     .filter((item) => item.count > 0)
     .sort((a, b) => b.count - a.count)
     .slice(0, 6);
+  const recentPosts = [...posts].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 3);
   const { strict: strictRelatedPosts, related: relatedPosts } = getRelatedPosts(posts, selectedPost);
 
   useEffect(() => {
@@ -682,50 +623,23 @@ export default function LostAndFoundDK() {
       return;
     }
 
-    setPosts((data || []).map(mapSupabasePost));
+    setPosts(data || []);
   }
 
   loadPosts();
 }, []);
-
-  useEffect(() => {
-  async function loadMessages() {
-    if (!user) {
-      setMessages([]);
-      return;
-    }
-
-    const { data, error } = await supabase
-      .from("messages")
-      .select("*, posts(title)")
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      console.error("Failed to load messages:", error);
-      return;
-    }
-
-    setMessages(data || []);
-  }
-
-  loadMessages();
-}, [user]);
 
   function labelType(type: PostType) {
     return type === "Lost" ? t.lost : t.found;
   }
 
   async function sendMagicLink() {
-  if (sendingLogin || loginCooldown > 0) return;
-
   console.log("Login clicked", loginEmail);
-
+  
   if (!loginEmail.trim()) {
     setLoginMessage("Please enter your email.");
     return;
   }
-
-  setSendingLogin(true);
 
   const { error } = await supabase.auth.signInWithOtp({
     email: loginEmail.trim(),
@@ -734,8 +648,6 @@ export default function LostAndFoundDK() {
     },
   });
 
-  setSendingLogin(false);
-
   if (error) {
     console.error("Magic link error:", error);
     setLoginMessage("Could not send login link. Check console.");
@@ -743,17 +655,6 @@ export default function LostAndFoundDK() {
   }
 
   setLoginMessage("Login link sent. Please check your email.");
-  setLoginCooldown(60);
-
-  const interval = window.setInterval(() => {
-    setLoginCooldown((prev) => {
-      if (prev <= 1) {
-        window.clearInterval(interval);
-        return 0;
-      }
-      return prev - 1;
-    });
-  }, 1000);
 }
 
 async function logout() {
@@ -765,17 +666,6 @@ async function logout() {
     if (option === "All cities") return t.allCities;
     if (option === "All categories") return t.allCategories;
     return option;
-  }
-
-  function isOwner(post: Post | null) {
-    return Boolean(user && post?.user_id && post.user_id === user.id);
-  }
-
-  function showOwnerOnlyMessage() {
-    setSuccessTitle(t.ownerOnlyAction);
-    setSuccessHelp("Please login with the email that created this post.");
-    setShowSuccess(true);
-    window.setTimeout(() => setShowSuccess(false), 3000);
   }
 
   function openPost(post: Post) {
@@ -792,41 +682,25 @@ async function logout() {
     setShowResolved(true);
     setShowArchived(false);
     setShowSavedOnly(false);
-    setShowMyPostsOnly(false);
     setSortBy("newest");
   }
 
-  function toggleSaved(postId: number | string) {
+  function toggleSaved(postId: number) {
     setPosts((currentPosts) => currentPosts.map((post) => (post.id === postId ? { ...post, saved: !post.saved } : post)));
     setSelectedPost((currentPost) => (currentPost && currentPost.id === postId ? { ...currentPost, saved: !currentPost.saved } : currentPost));
   }
 
-  async function handleSendContactMessage() {
-  if (!selectedPost) return;
-
-  if (!contactForm.email.trim() || !contactForm.message.trim()) {
-    setContactError(t.contactMissingFields);
-    return;
+  function handleSendContactMessage() {
+    if (!selectedPost) return;
+    if (!contactForm.email.trim() || !contactForm.message.trim()) {
+      setContactError(t.contactMissingFields);
+      return;
+    }
+    setContactError("");
+    setShowMessageSent(true);
+    setContactForm({ name: "", email: "", message: "" });
+    window.setTimeout(() => setShowMessageSent(false), 3000);
   }
-
-  const { error } = await supabase.from("messages").insert({
-    post_id: selectedPost.id,
-    sender_name: contactForm.name.trim() || null,
-    sender_email: contactForm.email.trim(),
-    message: contactForm.message.trim(),
-  });
-
-  if (error) {
-    console.error("Failed to send message:", error);
-    setContactError("Failed to send message. Please try again.");
-    return;
-  }
-
-  setContactError("");
-  setShowMessageSent(true);
-  setContactForm({ name: "", email: "", message: "" });
-  window.setTimeout(() => setShowMessageSent(false), 3000);
-}
 
   function openReportDialog(post: Post) {
     setReportTarget(post);
@@ -850,51 +724,32 @@ async function logout() {
   }
 
   function openManageDialog(post: Post) {
-    if (!isOwner(post)) {
-      showOwnerOnlyMessage();
-      return;
-    }
-
     setManageTarget(post);
     setManageCodeInput("");
     setManageError("");
     setPendingDelete(false);
   }
 
-  async function confirmToggleResolved() {
+  function confirmToggleResolved() {
     if (!manageTarget) return;
-    if (!isOwner(manageTarget)) {
-      showOwnerOnlyMessage();
+    const expectedCode = manageTarget.manageCode || "1234";
+    if (manageCodeInput.trim() !== expectedCode.trim()) {
+      setManageError(t.wrongManageCode);
       return;
     }
-
     const nextResolved = !manageTarget.resolved;
-    const nextStatus = nextResolved ? "resolved" : "open";
-
-    const { error } = await supabase
-      .from("posts")
-      .update({ status: nextStatus, updated_at: new Date().toISOString() })
-      .eq("id", manageTarget.id)
-      .eq("user_id", user!.id);
-
-    if (error) {
-      console.error("Failed to update post status:", error);
-      alert("Failed to update post. Check console.");
-      return;
-    }
-
-    setPosts((currentPosts) => currentPosts.map((post) => (post.id === manageTarget.id ? { ...post, resolved: nextResolved, status: nextStatus } : post)));
-    setSelectedPost((currentPost) => (currentPost && currentPost.id === manageTarget.id ? { ...currentPost, resolved: nextResolved, status: nextStatus } : currentPost));
+    setPosts((currentPosts) => currentPosts.map((post) => (post.id === manageTarget.id ? { ...post, resolved: nextResolved, manageCode: expectedCode } : post)));
+    setSelectedPost((currentPost) => (currentPost && currentPost.id === manageTarget.id ? { ...currentPost, resolved: nextResolved, manageCode: expectedCode } : currentPost));
     setManageTarget(null);
   }
 
   function openEditPost() {
     if (!manageTarget) return;
-    if (!isOwner(manageTarget)) {
-      showOwnerOnlyMessage();
+    const expectedCode = manageTarget.manageCode || "1234";
+    if (manageCodeInput.trim() !== expectedCode.trim()) {
+      setManageError(t.wrongManageCode);
       return;
     }
-
     setEditingPost(manageTarget);
     setEditForm({
       type: manageTarget.type,
@@ -908,7 +763,7 @@ async function logout() {
       location: manageTarget.location || "",
       image: manageTarget.image || "",
       images: manageTarget.images || (manageTarget.image ? [manageTarget.image] : []),
-      manageCode: manageTarget.manageCode || "auth-owner",
+      manageCode: expectedCode,
     });
     setEditError("");
     setManageTarget(null);
@@ -932,7 +787,7 @@ async function logout() {
     });
   }
 
-  async function saveEditedPost(e: React.FormEvent<HTMLFormElement>) {
+  function saveEditedPost(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!editingPost) return;
     if (!editForm.title.trim() || !editForm.description.trim() || !editForm.contact.trim()) {
@@ -952,32 +807,6 @@ async function logout() {
       image: images[0] || fallbackImage,
       images,
     };
-
-    if (!isOwner(editingPost)) {
-      showOwnerOnlyMessage();
-      return;
-    }
-
-    const { error } = await supabase
-      .from("posts")
-      .update({
-        title: updatedPost.title,
-        city: updatedPost.city,
-        category: updatedPost.category,
-        description: updatedPost.description,
-        contact_email: updatedPost.contact,
-        location: updatedPost.location,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", editingPost.id)
-      .eq("user_id", user!.id);
-
-    if (error) {
-      console.error("Failed to edit post:", error);
-      alert("Failed to edit post. Check console.");
-      return;
-    }
-
     setPosts((currentPosts) => currentPosts.map((post) => (post.id === editingPost.id ? updatedPost : post)));
     setSelectedPost((currentPost) => (currentPost && currentPost.id === editingPost.id ? updatedPost : currentPost));
     setEditingPost(null);
@@ -987,31 +816,18 @@ async function logout() {
     window.setTimeout(() => setShowSuccess(false), 3000);
   }
 
-  async function confirmDeletePost() {
+  function confirmDeletePost() {
     if (!manageTarget) return;
-    if (!isOwner(manageTarget)) {
-      showOwnerOnlyMessage();
+    const expectedCode = manageTarget.manageCode || "1234";
+    if (manageCodeInput.trim() !== expectedCode.trim()) {
+      setManageError(t.wrongManageCode);
       return;
     }
-
     if (!pendingDelete) {
       setPendingDelete(true);
       setManageError("");
       return;
     }
-
-    const { error } = await supabase
-      .from("posts")
-      .update({ status: "deleted", updated_at: new Date().toISOString() })
-      .eq("id", manageTarget.id)
-      .eq("user_id", user!.id);
-
-    if (error) {
-      console.error("Failed to delete post:", error);
-      alert("Failed to delete post. Check console.");
-      return;
-    }
-
     setPosts((currentPosts) => currentPosts.filter((post) => post.id !== manageTarget.id));
     setSelectedPost((currentPost) => (currentPost && currentPost.id === manageTarget.id ? null : currentPost));
     setManageTarget(null);
@@ -1024,7 +840,7 @@ async function logout() {
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (!form.title.trim() || !form.description.trim() || !form.contact.trim()) {
+    if (!form.title.trim() || !form.description.trim() || !form.contact.trim() || !form.manageCode.trim()) {
       setFormError(t.missingFields);
       return;
     }
@@ -1067,7 +883,6 @@ for (const image of images.slice(0, 3)) {
 }
     const newPost: Post = {
       id: Date.now(),
-      user_id: user.id,
       type: form.type,
       title: form.title.trim(),
       city: finalCity,
@@ -1079,52 +894,36 @@ for (const image of images.slice(0, 3)) {
       resolved: false,
       image: uploadedImageUrls[0] || fallbackImage,
       images: uploadedImageUrls,
-      manageCode: form.manageCode.trim() || "auth-owner",
+      manageCode: form.manageCode.trim(),
     };
     
-    const { data: insertedPost, error } = await supabase
-      .from("posts")
-      .insert({
-        user_id: user.id,
-        type: newPost.type,
-        title: newPost.title,
-        description: newPost.description,
-        city: newPost.city,
-        location: newPost.location,
-        category: newPost.category,
-        contact_email: newPost.contact,
-        status: "open",
-        manage_token_hash: newPost.manageCode,
-      })
-      .select()
-      .single();
+    const { error } = await supabase.from("posts").insert({
+  user_id: user.id,
+  type: newPost.type,
+  title: newPost.title,
+  description: newPost.description,
+  city: newPost.city,
+  location: newPost.location,
+  category: newPost.category,
+  contact_email: newPost.contact,
+  status: "open",
+  manage_token_hash: newPost.manageCode,
+});
 
-    if (error) {
-      console.error("Failed to save post:", error);
-      alert("Failed to save post. Check console.");
-      return;
-    }
+if (error) {
+  console.error("Failed to save post:", error);
+  alert("Failed to save post. Check console.");
+  return;
+}
 
-    const savedPost: Post = { ...newPost, id: insertedPost.id, user_id: user.id, status: "open" };
-
-    if (uploadedImageUrls.length > 0) {
-      const { error: imageInsertError } = await supabase.from("post_images").insert(
-        uploadedImageUrls.map((imageUrl, index) => ({
-          post_id: insertedPost.id,
-          image_url: imageUrl,
-          sort_order: index,
-        }))
-      );
-
-      if (imageInsertError) {
-        console.error("Failed to save post images:", imageInsertError);
-      }
-    }
-
-    setPosts([savedPost, ...posts]);
+if (error) {
+  console.error("Failed to save post:", error);
+  alert("Failed to save post. Check console.");
+  return;
+}
+    setPosts([newPost, ...posts]);
     setForm(emptyForm);
     setFormError("");
-    setShowPostForm(false);
     setSuccessTitle(t.postedSuccessfully);
     setSuccessHelp(t.postedHelp);
     setShowSuccess(true);
@@ -1151,30 +950,12 @@ for (const image of images.slice(0, 3)) {
               <button type="button" onClick={() => setLang("en")} className={`px-3 py-1.5 rounded-lg text-sm font-medium ${lang === "en" ? "bg-slate-900 text-white" : "text-slate-600"}`}>EN</button>
               <button type="button" onClick={() => setLang("da")} className={`px-3 py-1.5 rounded-lg text-sm font-medium ${lang === "da" ? "bg-slate-900 text-white" : "text-slate-600"}`}>DA</button>
             </div>
-            <button
-              type="button"
-              onClick={() => {
-                if (!user) {
-                  setLoginMessage("Please login with your email before posting.");
-                  return;
-                }
-
-                setShowPostForm(true);
-              }}
-              className="hidden sm:inline-flex items-center gap-2 rounded-xl bg-slate-900 text-white px-4 py-2 text-sm font-medium shadow-sm hover:bg-slate-700"
-            >
+            <a href="#post" className="hidden sm:inline-flex items-center gap-2 rounded-xl bg-slate-900 text-white px-4 py-2 text-sm font-medium shadow-sm hover:bg-slate-700">
               <PlusCircle size={18} /> {t.postItem}
-            </button>
+            </a>
             {user ? (
   <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
     <span>{user.email}</span>
-    <button
-  type="button"
-  onClick={() => setShowMessages(true)}
-  className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium hover:bg-slate-50"
->
-  Messages ({messages.length})
-</button>
     <button type="button" onClick={logout} className="font-semibold hover:underline">
       Logout
     </button>
@@ -1191,10 +972,9 @@ for (const image of images.slice(0, 3)) {
     <button
       type="button"
       onClick={sendMagicLink}
-      disabled={sendingLogin || loginCooldown > 0}
-      className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+      className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium hover:bg-slate-50"
     >
-      {sendingLogin ? "Sending..." : loginCooldown > 0 ? `Wait ${loginCooldown}s` : "Login"}
+      Login
     </button>
 
      {loginMessage && (
@@ -1210,15 +990,20 @@ for (const image of images.slice(0, 3)) {
       </section>
       
 
-      <section className="max-w-6xl mx-auto px-4 py-6 grid lg:grid-cols-2 gap-6 items-center">
+      <section className="max-w-6xl mx-auto px-4 py-10 grid lg:grid-cols-2 gap-8 items-center">
         <div>
           <div className="inline-flex items-center gap-2 rounded-full bg-white border border-slate-200 px-3 py-1 text-sm text-slate-600 mb-5">
             <Globe2 size={16} /> {t.languageBadge}
           </div>
           <h2 className="text-4xl md:text-5xl font-bold tracking-tight leading-tight">{t.heroTitle}</h2>
           <p className="mt-5 text-lg text-slate-600 leading-8">{t.heroText}</p>
+          <div className="mt-6 grid sm:grid-cols-3 gap-3">
+            <Feature icon={<MapPin size={18} />} title={t.cityBoards} text={t.cityBoardsText} />
+            <Feature icon={<ShieldCheck size={18} />} title={t.safetyFirst} text={t.safetyFirstText} />
+            <Feature icon={<Upload size={18} />} title={t.easyPosting} text={t.easyPostingText} />
           </div>
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
+        </div>
+        <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-5">
           <div className="rounded-2xl bg-slate-100 p-5">
             <p className="text-sm font-semibold text-slate-500 mb-2">{t.examplePost}</p>
             <h3 className="text-xl font-bold">{t.exampleTitle}</h3>
@@ -1232,23 +1017,40 @@ for (const image of images.slice(0, 3)) {
         </div>
       </section>
 
-      <section className="max-w-6xl mx-auto px-4 pb-6">
-        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-          <div className="flex flex-wrap items-center gap-2 text-sm text-slate-600">
-            <span className="font-semibold text-slate-900">{totalPosts} {t.posts}</span>
-            <span className="text-slate-300">·</span>
-            <span>{activeCities} {t.activeCities.toLowerCase()}</span>
-            <span className="text-slate-300">·</span>
-            <span>{resolvedPosts} {t.resolved.toLowerCase()}</span>
-            {categoryCounts.slice(0, 4).map((categoryItem) => (
-              <button
-                key={categoryItem.name}
-                type="button"
-                onClick={() => setCategory(categoryItem.name)}
-                className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-white"
-              >
-                {categoryItem.name} · {categoryItem.count}
+      <section className="max-w-6xl mx-auto px-4 pb-8">
+        <div className="bg-white rounded-3xl border border-slate-200 p-5 md:p-6 shadow-sm">
+          <div className="flex items-center gap-2 mb-5">
+            <Bookmark size={18} className="text-slate-500" />
+            <h2 className="text-xl font-bold">{t.popularCategories}</h2>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+            {categoryCounts.map((categoryItem) => (
+              <button key={categoryItem.name} type="button" onClick={() => setCategory(categoryItem.name)} className="rounded-2xl border border-slate-200 bg-white p-4 text-left hover:bg-slate-50 hover:border-slate-300 transition">
+                <p className="text-sm text-slate-500">{categoryItem.count} {t.posts}</p>
+                <h3 className="mt-2 font-bold leading-6">{categoryItem.name}</h3>
               </button>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="max-w-6xl mx-auto px-4 pb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <StatCard label={t.totalPosts} value={totalPosts} />
+          <StatCard label={t.resolvedPosts} value={resolvedPosts} />
+          <StatCard label={t.activeCities} value={activeCities} />
+        </div>
+      </section>
+
+      <section className="max-w-6xl mx-auto px-4 pb-8">
+        <div className="bg-white rounded-3xl border border-slate-200 p-5 md:p-6 shadow-sm">
+          <div className="flex items-center gap-2 mb-5">
+            <Clock3 size={18} className="text-slate-500" />
+            <h2 className="text-xl font-bold">{t.recentlyPosted}</h2>
+          </div>
+          <div className="grid md:grid-cols-3 gap-4">
+            {recentPosts.map((post) => (
+              <MiniPostCard key={post.id} post={post} t={t} labelType={labelType} onClick={() => openPost(post)} />
             ))}
           </div>
         </div>
@@ -1282,17 +1084,6 @@ for (const image of images.slice(0, 3)) {
             <ToggleButton active={showResolved} onClick={() => setShowResolved(!showResolved)} activeLabel={t.hideResolved} inactiveLabel={t.showResolved} />
             <ToggleButton active={showArchived} onClick={() => setShowArchived(!showArchived)} activeLabel={t.hideArchived} inactiveLabel={t.showArchived} />
             <ToggleButton active={showSavedOnly} onClick={() => setShowSavedOnly(!showSavedOnly)} activeLabel={t.showAllPosts} inactiveLabel={t.showSavedOnly} />
-            {user && (
-              <button
-                type="button"
-                onClick={() => setShowMyPostsOnly(!showMyPostsOnly)}
-                className={`rounded-xl border px-3 py-3 text-sm font-medium transition ${
-                  showMyPostsOnly ? "bg-slate-900 text-white border-slate-900" : "bg-white border-slate-200 text-slate-700"
-                }`}
-              >
-                {showMyPostsOnly ? t.showAllPosts : t.myPosts}
-              </button>
-            )}
           </div>
           <p className="mb-6 text-sm text-slate-500">{t.archivedAfter}</p>
 
@@ -1345,11 +1136,9 @@ for (const image of images.slice(0, 3)) {
                     <Mail size={16} /> {t.contactPoster}
                   </button>
                   <div className="mt-3 flex flex-wrap gap-2">
-                    {isOwner(post) && (
-                      <button type="button" onClick={() => openManageDialog(post)} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white text-slate-700 px-3 py-2 text-sm font-medium hover:bg-slate-50">
-                        <Pencil size={16} /> {t.managePost}
-                      </button>
-                    )}
+                    <button type="button" onClick={() => openManageDialog(post)} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white text-slate-700 px-3 py-2 text-sm font-medium hover:bg-slate-50">
+                      <Pencil size={16} /> {t.managePost}
+                    </button>
                     <button type="button" onClick={() => openReportDialog(post)} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white text-slate-700 px-3 py-2 text-sm font-medium hover:bg-slate-50">
                       <Flag size={16} /> {t.reportPost}
                     </button>
@@ -1361,69 +1150,22 @@ for (const image of images.slice(0, 3)) {
         </div>
       </section>
 
-      {showPostForm && (
-  <SimpleModal
-    title={t.formTitle}
-    subtitle={user ? `Posting as ${user.email}` : "Please login with your email before posting."}
-    closeLabel={t.close}
-    onClose={() => setShowPostForm(false)}
-    wide
-  >
-    {formError && (
-      <div className="mt-5 rounded-2xl border border-rose-200 bg-rose-50 text-rose-700 px-4 py-3 text-sm font-medium">
-        {formError}
-      </div>
-    )}
-
-    <PostForm
-      form={form}
-      setForm={setForm}
-      t={t}
-      onSubmit={handleSubmit}
-      onImageFiles={(files) => handleFiles(files, setForm)}
-      submitLabel={t.submit}
-      hideManageCode
-    />
-  </SimpleModal>
-)}
-
-      {showMessages && (
-  <SimpleModal
-    title="Messages"
-    subtitle={`${messages.length} message(s)`}
-    closeLabel={t.close}
-    onClose={() => setShowMessages(false)}
-    wide
-  >
-    {messages.length === 0 ? (
-      <p className="mt-4 text-sm text-slate-500">No messages yet.</p>
-    ) : (
-      <div className="mt-5 grid gap-3">
-        {messages.map((message) => (
-          <div key={message.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-            <p className="text-sm text-slate-500">
-              About: <span className="font-medium text-slate-700">{message.posts?.title || "Post"}</span>
-            </p>
-            <p className="mt-2 text-sm text-slate-500">
-              From: <span className="font-medium text-slate-700">{message.sender_name || "Anonymous"}</span>{" "}
-              &lt;{message.sender_email}&gt;
-            </p>
-            <p className="mt-3 text-slate-800 leading-6">{message.message}</p>
-            <p className="mt-3 text-xs text-slate-400">
-              {new Date(message.created_at).toLocaleString()}
-            </p>
-           <a
-  href={`mailto:${message.sender_email}?subject=Re: LostAndFoundDK - ${message.posts?.title || "your message"}`}
-  className="mt-4 inline-flex rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
->
-  Reply by email
-</a> 
-          </div>
-        ))}
-      </div>
-    )}
-  </SimpleModal>
-)}
+      <section id="post" className="max-w-6xl mx-auto px-4 pb-16">
+        <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-5 md:p-6">
+          <h2 className="text-2xl font-bold">{t.formTitle}</h2>
+          <p className="text-slate-600 mt-2">{t.formHelp}</p>
+          <p className="text-sm text-slate-500 mt-2">{t.savedLocally}</p>
+          {formError && <div className="mt-5 rounded-2xl border border-rose-200 bg-rose-50 text-rose-700 px-4 py-3 text-sm font-medium">{formError}</div>}
+          <PostForm
+            form={form}
+            setForm={setForm}
+            t={t}
+            onSubmit={handleSubmit}
+            onImageFiles={(files) => handleFiles(files, setForm)}
+            submitLabel={t.submit}
+          />
+        </div>
+      </section>
 
       {showSuccess && <SuccessModal title={successTitle || t.postedSuccessfully} help={successHelp || t.postedHelp} closeLabel={t.close} onClose={() => setShowSuccess(false)} />}
       {reportTarget && (
@@ -1453,7 +1195,8 @@ for (const image of images.slice(0, 3)) {
       )}
       {manageTarget && (
         <SimpleModal title={t.managePostTitle} subtitle={manageTarget.title} closeLabel={t.close} onClose={() => { setManageTarget(null); setPendingDelete(false); }}>
-          <p className="mt-4 text-sm text-slate-600 leading-6">{t.manageOwnerHelp}</p>
+          <p className="mt-4 text-sm text-slate-600 leading-6">{t.managePostHelp}</p>
+          <input className="mt-4 w-full rounded-xl border border-slate-200 px-3 py-3 outline-none focus:ring-2 focus:ring-slate-300" placeholder={t.manageCodePlaceholder} value={manageCodeInput} onChange={(e) => { setManageCodeInput(e.target.value); setManageError(""); }} autoFocus />
           {manageError && <p className="mt-3 text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2">{manageError}</p>}
           {pendingDelete && <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 text-rose-700 px-4 py-3 text-sm leading-6"><p className="font-semibold">{t.confirmDeleteTitle}</p><p>{t.confirmDeleteHelp}</p></div>}
           <div className="mt-5 grid grid-cols-1 gap-3">
@@ -1520,7 +1263,7 @@ for (const image of images.slice(0, 3)) {
               </div>
               <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <button type="button" onClick={() => toggleSaved(selectedPost.id)} className={`w-full rounded-xl border px-4 py-3 text-sm font-medium inline-flex items-center justify-center gap-2 ${selectedPost.saved ? "border-yellow-200 bg-yellow-50 text-yellow-700 hover:bg-yellow-100" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"}`}><Bookmark size={18} /> {selectedPost.saved ? t.savedPost : t.savePost}</button>
-                {isOwner(selectedPost) && <button type="button" onClick={() => openManageDialog(selectedPost)} className="w-full rounded-xl border border-slate-200 bg-white text-slate-700 px-4 py-3 text-sm font-medium hover:bg-slate-50 inline-flex items-center justify-center gap-2"><Pencil size={18} /> {t.managePost}</button>}
+                <button type="button" onClick={() => openManageDialog(selectedPost)} className="w-full rounded-xl border border-slate-200 bg-white text-slate-700 px-4 py-3 text-sm font-medium hover:bg-slate-50 inline-flex items-center justify-center gap-2"><Pencil size={18} /> {t.managePost}</button>
                 <button type="button" onClick={() => openReportDialog(selectedPost)} className="w-full rounded-xl border border-slate-200 bg-white text-slate-700 px-4 py-3 text-sm font-medium hover:bg-slate-50 inline-flex items-center justify-center gap-2"><Flag size={18} /> {t.reportPost}</button>
               </div>
               <div className="mt-5 rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm text-amber-800 leading-6">{t.privacyReminder}</div>
@@ -1549,11 +1292,12 @@ for (const image of images.slice(0, 3)) {
   );
 }
 
-function Feature({ title, text }: { icon?: React.ReactNode; title: string; text: string }) {
+function Feature({ icon, title, text }: { icon: React.ReactNode; title: string; text: string }) {
   return (
-    <div className="rounded-xl bg-white border border-slate-200 p-3 shadow-sm">
-      <h3 className="text-sm font-semibold">{title}</h3>
-      <p className="text-xs text-slate-500 mt-1 leading-5">{text}</p>
+    <div className="rounded-2xl bg-white border border-slate-200 p-4 shadow-sm">
+      <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center mb-3">{icon}</div>
+      <h3 className="font-semibold">{title}</h3>
+      <p className="text-sm text-slate-500 mt-1 leading-5">{text}</p>
     </div>
   );
 }
@@ -1579,7 +1323,7 @@ function Badge({ children }: { children: React.ReactNode }) {
   return <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 text-slate-700 px-3 py-1 text-sm font-medium border border-slate-200">{children}</span>;
 }
 
-function MiniPostCard({ post, t, labelType, onClick }: { post: Post; t: (typeof translations)[Language]; labelType: (type: PostType) => string; onClick: () => void }) {
+function MiniPostCard({ post, t, labelType, onClick }: { post: Post; t: typeof translations.en; labelType: (type: PostType) => string; onClick: () => void }) {
   return (
     <button type="button" onClick={onClick} className="text-left rounded-2xl border border-slate-200 p-4 hover:bg-slate-50 transition bg-white">
       <div className="flex items-center justify-between gap-3">
@@ -1647,7 +1391,7 @@ function PostForm({
 }: {
   form: FormState;
   setForm: React.Dispatch<React.SetStateAction<FormState>>;
-  t: (typeof translations)[Language];
+  t: typeof translations.en;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
   onImageFiles: (files: File[]) => void;
   submitLabel: string;

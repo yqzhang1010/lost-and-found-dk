@@ -74,7 +74,7 @@ type FormState = {
 const translations = {
   en: {
     tagline: "A simple community lost & found board for Denmark",
-    postItem: "Post item",
+    postItem: "Create post",
     languageBadge: "English · Danish friendly",
     heroTitle: "Lost something in Denmark? Let the community help.",
     heroText: "Post or find lost items across Denmark by city, category, date, and location.",
@@ -1161,9 +1161,9 @@ for (const image of images.slice(0, 3)) {
 
                 setShowPostForm(true);
               }}
-              className="hidden sm:inline-flex items-center gap-2 rounded-xl bg-slate-900 text-white px-4 py-2 text-sm font-medium shadow-sm hover:bg-slate-700"
+              className="hidden sm:inline-flex items-center gap-2 rounded-2xl bg-blue-600 text-white px-5 py-3 text-base font-semibold shadow-md hover:bg-blue-700 transition"
             >
-              <PlusCircle size={18} /> {t.postItem}
+              <PlusCircle size={20} /> {t.postItem}
             </button>
             {user ? (
   <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
@@ -1217,6 +1217,20 @@ for (const image of images.slice(0, 3)) {
           </div>
           <h2 className="text-4xl md:text-5xl font-bold tracking-tight leading-tight">{t.heroTitle}</h2>
           <p className="mt-5 text-lg text-slate-600 leading-8">{t.heroText}</p>
+          <button
+            type="button"
+            onClick={() => {
+              if (!user) {
+                setLoginMessage("Please login with your email before posting.");
+                return;
+              }
+
+              setShowPostForm(true);
+            }}
+            className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-blue-600 text-white px-6 py-3 text-base font-semibold shadow-md hover:bg-blue-700 transition"
+          >
+            <PlusCircle size={20} /> {t.postItem}
+          </button>
           </div>
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
           <div className="rounded-2xl bg-slate-100 p-5">
