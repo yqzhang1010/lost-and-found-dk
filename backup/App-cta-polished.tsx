@@ -367,6 +367,7 @@ const cities = [
   "Other / Anden by",
 ];
 
+const fallbackImage = "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?q=80&w=1200&auto=format&fit=crop";
 const STORAGE_KEY = "lost-and-found-dk-posts-v1";
 const ARCHIVE_AFTER_DAYS = 90;
 
@@ -437,7 +438,7 @@ const emptyForm: FormState = {
 };
 
 function normalizePost(post: Post): Post {
-  const images = post.images?.length ? post.images : post.image ? [post.image] : [];
+  const images = post.images?.length ? post.images : post.image ? [post.image] : [fallbackImage];
   return {
     ...post,
     image: post.image || images[0],
@@ -454,7 +455,7 @@ function mapSupabasePost(row: any): Post {
     .map((imageRow: any) => imageRow.image_url)
     .filter(Boolean);
 
-  const primaryImage = images[0];
+  const primaryImage = images[0] || fallbackImage;
 
   return {
     id: row.id,
@@ -939,7 +940,7 @@ async function logout() {
       return;
     }
     const finalCity = editForm.city === "Other / Anden by" && editForm.customCity.trim() ? editForm.customCity.trim() : editForm.city;
-    const images = editForm.images.length ? editForm.images : editForm.image ? [editForm.image] : [];
+    const images = editForm.images.length ? editForm.images : [editForm.image || fallbackImage];
     const updatedPost: Post = {
       ...editingPost,
       title: editForm.title.trim(),
@@ -948,7 +949,7 @@ async function logout() {
       description: editForm.description.trim(),
       contact: editForm.contact.trim(),
       location: editForm.location.trim(),
-      image: images[0],
+      image: images[0] || fallbackImage,
       images,
     };
 
@@ -1032,7 +1033,7 @@ async function logout() {
   return;
 }
     const finalCity = form.city === "Other / Anden by" && form.customCity.trim() ? form.customCity.trim() : form.city;
-    const images = form.images.length ? form.images : form.image ? [form.image] : [];
+    const images = form.images.length ? form.images : [form.image || fallbackImage];
     const uploadedImageUrls: string[] = [];
 
 for (const image of images.slice(0, 3)) {
@@ -1076,7 +1077,7 @@ for (const image of images.slice(0, 3)) {
       contact: form.contact.trim(),
       location: form.location.trim(),
       resolved: false,
-      image: uploadedImageUrls[0],
+      image: uploadedImageUrls[0] || fallbackImage,
       images: uploadedImageUrls,
       manageCode: form.manageCode.trim() || "auth-owner",
     };

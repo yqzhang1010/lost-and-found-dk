@@ -74,7 +74,7 @@ type FormState = {
 const translations = {
   en: {
     tagline: "A simple community lost & found board for Denmark",
-    postItem: "Create post",
+    postItem: "Post item",
     languageBadge: "English · Danish friendly",
     heroTitle: "Lost something in Denmark? Let the community help.",
     heroText: "Post or find lost items across Denmark by city, category, date, and location.",
@@ -367,6 +367,7 @@ const cities = [
   "Other / Anden by",
 ];
 
+const fallbackImage = "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?q=80&w=1200&auto=format&fit=crop";
 const STORAGE_KEY = "lost-and-found-dk-posts-v1";
 const ARCHIVE_AFTER_DAYS = 90;
 
@@ -437,7 +438,7 @@ const emptyForm: FormState = {
 };
 
 function normalizePost(post: Post): Post {
-  const images = post.images?.length ? post.images : post.image ? [post.image] : [];
+  const images = post.images?.length ? post.images : post.image ? [post.image] : [fallbackImage];
   return {
     ...post,
     image: post.image || images[0],
@@ -454,7 +455,7 @@ function mapSupabasePost(row: any): Post {
     .map((imageRow: any) => imageRow.image_url)
     .filter(Boolean);
 
-  const primaryImage = images[0];
+  const primaryImage = images[0] || fallbackImage;
 
   return {
     id: row.id,
@@ -939,7 +940,7 @@ async function logout() {
       return;
     }
     const finalCity = editForm.city === "Other / Anden by" && editForm.customCity.trim() ? editForm.customCity.trim() : editForm.city;
-    const images = editForm.images.length ? editForm.images : editForm.image ? [editForm.image] : [];
+    const images = editForm.images.length ? editForm.images : [editForm.image || fallbackImage];
     const updatedPost: Post = {
       ...editingPost,
       title: editForm.title.trim(),
@@ -948,7 +949,7 @@ async function logout() {
       description: editForm.description.trim(),
       contact: editForm.contact.trim(),
       location: editForm.location.trim(),
-      image: images[0],
+      image: images[0] || fallbackImage,
       images,
     };
 
@@ -1032,7 +1033,7 @@ async function logout() {
   return;
 }
     const finalCity = form.city === "Other / Anden by" && form.customCity.trim() ? form.customCity.trim() : form.city;
-    const images = form.images.length ? form.images : form.image ? [form.image] : [];
+    const images = form.images.length ? form.images : [form.image || fallbackImage];
     const uploadedImageUrls: string[] = [];
 
 for (const image of images.slice(0, 3)) {
@@ -1076,7 +1077,7 @@ for (const image of images.slice(0, 3)) {
       contact: form.contact.trim(),
       location: form.location.trim(),
       resolved: false,
-      image: uploadedImageUrls[0],
+      image: uploadedImageUrls[0] || fallbackImage,
       images: uploadedImageUrls,
       manageCode: form.manageCode.trim() || "auth-owner",
     };
@@ -1160,9 +1161,9 @@ for (const image of images.slice(0, 3)) {
 
                 setShowPostForm(true);
               }}
-              className="hidden sm:inline-flex items-center gap-2 rounded-2xl bg-blue-600 text-white px-5 py-3 text-base font-semibold shadow-md hover:bg-blue-700 transition"
+              className="hidden sm:inline-flex items-center gap-2 rounded-xl bg-slate-900 text-white px-4 py-2 text-sm font-medium shadow-sm hover:bg-slate-700"
             >
-              <PlusCircle size={20} /> {t.postItem}
+              <PlusCircle size={18} /> {t.postItem}
             </button>
             {user ? (
   <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
@@ -1216,20 +1217,6 @@ for (const image of images.slice(0, 3)) {
           </div>
           <h2 className="text-4xl md:text-5xl font-bold tracking-tight leading-tight">{t.heroTitle}</h2>
           <p className="mt-5 text-lg text-slate-600 leading-8">{t.heroText}</p>
-          <button
-            type="button"
-            onClick={() => {
-              if (!user) {
-                setLoginMessage("Please login with your email before posting.");
-                return;
-              }
-
-              setShowPostForm(true);
-            }}
-            className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-blue-600 text-white px-6 py-3 text-base font-semibold shadow-md hover:bg-blue-700 transition"
-          >
-            <PlusCircle size={20} /> {t.postItem}
-          </button>
           </div>
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
           <div className="rounded-2xl bg-slate-100 p-5">

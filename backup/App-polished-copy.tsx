@@ -4,6 +4,7 @@ import type { User } from "@supabase/supabase-js";
 import {
   Bookmark,
   CheckCircle2,
+  Clock3,
   Filter,
   Flag,
   Globe2,
@@ -74,10 +75,10 @@ type FormState = {
 const translations = {
   en: {
     tagline: "A simple community lost & found board for Denmark",
-    postItem: "Create post",
+    postItem: "Post item",
     languageBadge: "English · Danish friendly",
     heroTitle: "Lost something in Denmark? Let the community help.",
-    heroText: "Post or find lost items across Denmark by city, category, date, and location.",
+    heroText: "Post lost or found items by city, category, date and location. This prototype is designed for foreigners, students and visitors who may not know the local system.",
     cityBoards: "City boards",
     cityBoardsText: "Copenhagen, Aarhus, Odense and more",
     safetyFirst: "Safety first",
@@ -197,7 +198,7 @@ const translations = {
     postItem: "Opret opslag",
     languageBadge: "Engelsk · Dansk venlig",
     heroTitle: "Har du mistet noget i Danmark? Lad fællesskabet hjælpe.",
-    heroText: "Opret eller find mistede genstande i hele Danmark efter by, kategori, dato og sted.",
+    heroText: "Opret opslag om mistede eller fundne ting efter by, kategori, dato og sted. Denne prototype er lavet til udlændinge, studerende og besøgende, som ikke kender det lokale system.",
     cityBoards: "Byopslag",
     cityBoardsText: "København, Aarhus, Odense og flere",
     safetyFirst: "Sikkerhed først",
@@ -367,6 +368,7 @@ const cities = [
   "Other / Anden by",
 ];
 
+const fallbackImage = "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?q=80&w=1200&auto=format&fit=crop";
 const STORAGE_KEY = "lost-and-found-dk-posts-v1";
 const ARCHIVE_AFTER_DAYS = 90;
 
@@ -437,7 +439,7 @@ const emptyForm: FormState = {
 };
 
 function normalizePost(post: Post): Post {
-  const images = post.images?.length ? post.images : post.image ? [post.image] : [];
+  const images = post.images?.length ? post.images : post.image ? [post.image] : [fallbackImage];
   return {
     ...post,
     image: post.image || images[0],
@@ -454,7 +456,7 @@ function mapSupabasePost(row: any): Post {
     .map((imageRow: any) => imageRow.image_url)
     .filter(Boolean);
 
-  const primaryImage = images[0];
+  const primaryImage = images[0] || fallbackImage;
 
   return {
     id: row.id,
@@ -623,7 +625,6 @@ export default function LostAndFoundDK() {
   const [loginMessage, setLoginMessage] = useState("");
   const [sendingLogin, setSendingLogin] = useState(false);
   const [loginCooldown, setLoginCooldown] = useState(0);
-  const [showPostForm, setShowPostForm] = useState(false);
 
   const cityOptions = ["All cities", ...cities];
   const categoryOptions = ["All categories", ...categories];
@@ -645,6 +646,7 @@ export default function LostAndFoundDK() {
     .filter((item) => item.count > 0)
     .sort((a, b) => b.count - a.count)
     .slice(0, 6);
+  const recentPosts = [...posts].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 3);
   const { strict: strictRelatedPosts, related: relatedPosts } = getRelatedPosts(posts, selectedPost);
 
   useEffect(() => {
@@ -939,7 +941,7 @@ async function logout() {
       return;
     }
     const finalCity = editForm.city === "Other / Anden by" && editForm.customCity.trim() ? editForm.customCity.trim() : editForm.city;
-    const images = editForm.images.length ? editForm.images : editForm.image ? [editForm.image] : [];
+    const images = editForm.images.length ? editForm.images : [editForm.image || fallbackImage];
     const updatedPost: Post = {
       ...editingPost,
       title: editForm.title.trim(),
@@ -948,7 +950,7 @@ async function logout() {
       description: editForm.description.trim(),
       contact: editForm.contact.trim(),
       location: editForm.location.trim(),
-      image: images[0],
+      image: images[0] || fallbackImage,
       images,
     };
 
@@ -1032,7 +1034,7 @@ async function logout() {
   return;
 }
     const finalCity = form.city === "Other / Anden by" && form.customCity.trim() ? form.customCity.trim() : form.city;
-    const images = form.images.length ? form.images : form.image ? [form.image] : [];
+    const images = form.images.length ? form.images : [form.image || fallbackImage];
     const uploadedImageUrls: string[] = [];
 
 for (const image of images.slice(0, 3)) {
@@ -1076,7 +1078,7 @@ for (const image of images.slice(0, 3)) {
       contact: form.contact.trim(),
       location: form.location.trim(),
       resolved: false,
-      image: uploadedImageUrls[0],
+      image: uploadedImageUrls[0] || fallbackImage,
       images: uploadedImageUrls,
       manageCode: form.manageCode.trim() || "auth-owner",
     };
@@ -1123,7 +1125,6 @@ for (const image of images.slice(0, 3)) {
     setPosts([savedPost, ...posts]);
     setForm(emptyForm);
     setFormError("");
-    setShowPostForm(false);
     setSuccessTitle(t.postedSuccessfully);
     setSuccessHelp(t.postedHelp);
     setShowSuccess(true);
@@ -1150,20 +1151,9 @@ for (const image of images.slice(0, 3)) {
               <button type="button" onClick={() => setLang("en")} className={`px-3 py-1.5 rounded-lg text-sm font-medium ${lang === "en" ? "bg-slate-900 text-white" : "text-slate-600"}`}>EN</button>
               <button type="button" onClick={() => setLang("da")} className={`px-3 py-1.5 rounded-lg text-sm font-medium ${lang === "da" ? "bg-slate-900 text-white" : "text-slate-600"}`}>DA</button>
             </div>
-            <button
-              type="button"
-              onClick={() => {
-                if (!user) {
-                  setLoginMessage("Please login with your email before posting.");
-                  return;
-                }
-
-                setShowPostForm(true);
-              }}
-              className="hidden sm:inline-flex items-center gap-2 rounded-2xl bg-blue-600 text-white px-5 py-3 text-base font-semibold shadow-md hover:bg-blue-700 transition"
-            >
-              <PlusCircle size={20} /> {t.postItem}
-            </button>
+            <a href="#post" className="hidden sm:inline-flex items-center gap-2 rounded-xl bg-slate-900 text-white px-4 py-2 text-sm font-medium shadow-sm hover:bg-slate-700">
+              <PlusCircle size={18} /> {t.postItem}
+            </a>
             {user ? (
   <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
     <span>{user.email}</span>
@@ -1209,29 +1199,20 @@ for (const image of images.slice(0, 3)) {
       </section>
       
 
-      <section className="max-w-6xl mx-auto px-4 py-6 grid lg:grid-cols-2 gap-6 items-center">
+      <section className="max-w-6xl mx-auto px-4 py-10 grid lg:grid-cols-2 gap-8 items-center">
         <div>
           <div className="inline-flex items-center gap-2 rounded-full bg-white border border-slate-200 px-3 py-1 text-sm text-slate-600 mb-5">
             <Globe2 size={16} /> {t.languageBadge}
           </div>
           <h2 className="text-4xl md:text-5xl font-bold tracking-tight leading-tight">{t.heroTitle}</h2>
           <p className="mt-5 text-lg text-slate-600 leading-8">{t.heroText}</p>
-          <button
-            type="button"
-            onClick={() => {
-              if (!user) {
-                setLoginMessage("Please login with your email before posting.");
-                return;
-              }
-
-              setShowPostForm(true);
-            }}
-            className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-blue-600 text-white px-6 py-3 text-base font-semibold shadow-md hover:bg-blue-700 transition"
-          >
-            <PlusCircle size={20} /> {t.postItem}
-          </button>
+          <div className="mt-6 grid sm:grid-cols-3 gap-3">
+            <Feature icon={<MapPin size={18} />} title={t.cityBoards} text={t.cityBoardsText} />
+            <Feature icon={<ShieldCheck size={18} />} title={t.safetyFirst} text={t.safetyFirstText} />
+            <Feature icon={<Upload size={18} />} title={t.easyPosting} text={t.easyPostingText} />
           </div>
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
+        </div>
+        <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-5">
           <div className="rounded-2xl bg-slate-100 p-5">
             <p className="text-sm font-semibold text-slate-500 mb-2">{t.examplePost}</p>
             <h3 className="text-xl font-bold">{t.exampleTitle}</h3>
@@ -1245,23 +1226,40 @@ for (const image of images.slice(0, 3)) {
         </div>
       </section>
 
-      <section className="max-w-6xl mx-auto px-4 pb-6">
-        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-          <div className="flex flex-wrap items-center gap-2 text-sm text-slate-600">
-            <span className="font-semibold text-slate-900">{totalPosts} {t.posts}</span>
-            <span className="text-slate-300">·</span>
-            <span>{activeCities} {t.activeCities.toLowerCase()}</span>
-            <span className="text-slate-300">·</span>
-            <span>{resolvedPosts} {t.resolved.toLowerCase()}</span>
-            {categoryCounts.slice(0, 4).map((categoryItem) => (
-              <button
-                key={categoryItem.name}
-                type="button"
-                onClick={() => setCategory(categoryItem.name)}
-                className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-white"
-              >
-                {categoryItem.name} · {categoryItem.count}
+      <section className="max-w-6xl mx-auto px-4 pb-8">
+        <div className="bg-white rounded-3xl border border-slate-200 p-5 md:p-6 shadow-sm">
+          <div className="flex items-center gap-2 mb-5">
+            <Bookmark size={18} className="text-slate-500" />
+            <h2 className="text-xl font-bold">{t.popularCategories}</h2>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+            {categoryCounts.map((categoryItem) => (
+              <button key={categoryItem.name} type="button" onClick={() => setCategory(categoryItem.name)} className="rounded-2xl border border-slate-200 bg-white p-4 text-left hover:bg-slate-50 hover:border-slate-300 transition">
+                <p className="text-sm text-slate-500">{categoryItem.count} {t.posts}</p>
+                <h3 className="mt-2 font-bold leading-6">{categoryItem.name}</h3>
               </button>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="max-w-6xl mx-auto px-4 pb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <StatCard label={t.totalPosts} value={totalPosts} />
+          <StatCard label={t.resolvedPosts} value={resolvedPosts} />
+          <StatCard label={t.activeCities} value={activeCities} />
+        </div>
+      </section>
+
+      <section className="max-w-6xl mx-auto px-4 pb-8">
+        <div className="bg-white rounded-3xl border border-slate-200 p-5 md:p-6 shadow-sm">
+          <div className="flex items-center gap-2 mb-5">
+            <Clock3 size={18} className="text-slate-500" />
+            <h2 className="text-xl font-bold">{t.recentlyPosted}</h2>
+          </div>
+          <div className="grid md:grid-cols-3 gap-4">
+            {recentPosts.map((post) => (
+              <MiniPostCard key={post.id} post={post} t={t} labelType={labelType} onClick={() => openPost(post)} />
             ))}
           </div>
         </div>
@@ -1374,31 +1372,32 @@ for (const image of images.slice(0, 3)) {
         </div>
       </section>
 
-      {showPostForm && (
-  <SimpleModal
-    title={t.formTitle}
-    subtitle={user ? `Posting as ${user.email}` : "Please login with your email before posting."}
-    closeLabel={t.close}
-    onClose={() => setShowPostForm(false)}
-    wide
-  >
-    {formError && (
-      <div className="mt-5 rounded-2xl border border-rose-200 bg-rose-50 text-rose-700 px-4 py-3 text-sm font-medium">
-        {formError}
-      </div>
-    )}
-
-    <PostForm
-      form={form}
-      setForm={setForm}
-      t={t}
-      onSubmit={handleSubmit}
-      onImageFiles={(files) => handleFiles(files, setForm)}
-      submitLabel={t.submit}
-      hideManageCode
-    />
-  </SimpleModal>
+      <section id="post" className="max-w-6xl mx-auto px-4 pb-16">
+        <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-5 md:p-6">
+          <h2 className="text-2xl font-bold">{t.formTitle}</h2>
+          <p className="text-slate-600 mt-2">{t.formHelp}</p>
+          {user ? (
+  <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+    Posting as <span className="font-semibold">{user.email}</span>
+  </div>
+) : (
+  <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+    Please login with your email before posting.
+  </div>
 )}
+          <p className="text-sm text-slate-500 mt-2">{t.savedLocally}</p>
+          {formError && <div className="mt-5 rounded-2xl border border-rose-200 bg-rose-50 text-rose-700 px-4 py-3 text-sm font-medium">{formError}</div>}
+          <PostForm
+            form={form}
+            setForm={setForm}
+            t={t}
+            onSubmit={handleSubmit}
+            onImageFiles={(files) => handleFiles(files, setForm)}
+            submitLabel={t.submit}
+            hideManageCode
+          />
+        </div>
+      </section>
 
       {showMessages && (
   <SimpleModal
@@ -1562,11 +1561,12 @@ for (const image of images.slice(0, 3)) {
   );
 }
 
-function Feature({ title, text }: { icon?: React.ReactNode; title: string; text: string }) {
+function Feature({ icon, title, text }: { icon: React.ReactNode; title: string; text: string }) {
   return (
-    <div className="rounded-xl bg-white border border-slate-200 p-3 shadow-sm">
-      <h3 className="text-sm font-semibold">{title}</h3>
-      <p className="text-xs text-slate-500 mt-1 leading-5">{text}</p>
+    <div className="rounded-2xl bg-white border border-slate-200 p-4 shadow-sm">
+      <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center mb-3">{icon}</div>
+      <h3 className="font-semibold">{title}</h3>
+      <p className="text-sm text-slate-500 mt-1 leading-5">{text}</p>
     </div>
   );
 }
