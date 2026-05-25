@@ -1155,7 +1155,14 @@ for (const image of images.slice(0, 3)) {
             </div>
             <button
               type="button"
-              onClick={() => setShowPostForm(true)}
+              onClick={() => {
+                if (!user) {
+                  setLoginMessage("Please login with your email before posting.");
+                  return;
+                }
+
+                setShowPostForm(true);
+              }}
               className="hidden sm:inline-flex items-center gap-2 rounded-xl bg-slate-900 text-white px-4 py-2 text-sm font-medium shadow-sm hover:bg-slate-700"
             >
               <PlusCircle size={18} /> {t.postItem}
