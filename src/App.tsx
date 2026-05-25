@@ -45,6 +45,18 @@ type Post = {
   manageCode?: string;
 };
 
+type Message = {
+  id: string;
+  post_id: string;
+  sender_name?: string | null;
+  sender_email: string;
+  message: string;
+  created_at: string;
+  posts?: {
+    title: string;
+  };
+};
+
 type FormState = {
   type: PostType;
   title: string;
@@ -87,11 +99,11 @@ const translations = {
     contactFormMessage: "Message to poster",
     sendMessage: "Send message",
     messageSent: "Message sent!",
-    messageSentHelp: "Prototype: in the real version, this message would be forwarded without revealing the poster's email.",
+    messageSentHelp: "Your message has been delivered to the poster securely through LostAndFoundDK.",
     contactPrivacy: "The poster's email is hidden. Messages are sent through the website.",
     close: "Close",
     formTitle: "Post a lost or found item",
-    formHelp: "This first version stores posts only in the browser session. Later we can connect it to a database.",
+    formHelp: "Create a post with details, location and photos. Your post will be stored securely in the cloud.",
     missingFields: "Please fill in title, description, email and manage code.",
     contactMissingFields: "Please fill in your email and message.",
     postedSuccessfully: "Posted successfully!",
@@ -100,8 +112,8 @@ const translations = {
     locationPlaceholder: "Exact location",
     emailPlaceholder: "Email contact",
     descPlaceholder: "Description: where, when, what it looks like...",
-    imageUploadTitle: "Image upload coming next",
-    imageUploadHelp: "For now you can paste an image URL below.",
+    imageUploadTitle: "Upload images",
+    imageUploadHelp: "Upload up to 3 clear photos to help others identify the item.",
     imageUrlPlaceholder: "Paste image URL",
     officialReminder: "Important items like passports, ID cards and bank cards should also be reported to Danish police (114).",
     privacyReminder: "Privacy reminder: do not post CPR numbers, passport numbers, bank card numbers or other sensitive personal information.",
@@ -129,7 +141,7 @@ const translations = {
     manageCodePlaceholder: "Manage code, for example 1234",
     manageCodeHelp: "Use this code later to mark the post as resolved or reopen it.",
     wrongManageCode: "Wrong manage code.",
-    savedLocally: "Posts are saved locally in this browser for this prototype.",
+    savedLocally: "Posts are securely stored in the cloud and synced across devices.",
     chooseImage: "Choose images",
     imageCount: "Up to 3 images",
     nextImage: "Next",
@@ -142,18 +154,18 @@ const translations = {
     editPost: "Edit post",
     saveChanges: "Save changes",
     editedSuccessfully: "Post updated",
-    editedHelp: "Your changes have been saved in this browser prototype.",
+    editedHelp: "Your changes have been saved securely in the cloud.",
     deletePost: "Delete post",
     confirmDeleteTitle: "Delete this post?",
     confirmDeleteButton: "Yes, delete permanently",
     confirmDeleteHelp: "This cannot be undone in this prototype.",
     cancel: "Cancel",
     deletedSuccessfully: "Post deleted",
-    deletedHelp: "The post has been removed from this browser prototype.",
+    deletedHelp: "The post has been removed from the public board.",
     reportPost: "Report post",
     reportTitle: "Report this post",
     reportReason: "Reason for report",
-    reportHelp: "Prototype: in the real version, reports would be reviewed by moderators.",
+    reportHelp: "Thank you. Reports can be reviewed by moderators to keep the community safe.",
     reportSent: "Report sent",
     reportMissingReason: "Please enter a reason for the report.",
     savePost: "Save post",
@@ -207,11 +219,11 @@ const translations = {
     contactFormMessage: "Besked til opretteren",
     sendMessage: "Send besked",
     messageSent: "Beskeden er sendt!",
-    messageSentHelp: "Prototype: i den rigtige version videresendes beskeden uden at vise opretterens e-mail.",
+    messageSentHelp: "Din besked er sendt sikkert til opretteren gennem LostAndFoundDK.",
     contactPrivacy: "Opretterens e-mail er skjult. Beskeder sendes gennem hjemmesiden.",
     close: "Luk",
     formTitle: "Opret et opslag om mistet eller fundet ting",
-    formHelp: "Denne første version gemmer kun opslag i browsersessionen. Senere kan vi forbinde den til en database.",
+    formHelp: "Opret et opslag med detaljer, placering og billeder. Dit opslag gemmes sikkert i skyen.",
     missingFields: "Udfyld venligst titel, beskrivelse, e-mail og administrationskode.",
     contactMissingFields: "Udfyld venligst din e-mail og besked.",
     postedSuccessfully: "Opslaget er oprettet!",
@@ -220,8 +232,8 @@ const translations = {
     locationPlaceholder: "Præcis placering",
     emailPlaceholder: "E-mail kontakt",
     descPlaceholder: "Beskrivelse: hvor, hvornår, hvordan det ser ud...",
-    imageUploadTitle: "Billedupload kommer snart",
-    imageUploadHelp: "Indsæt et billede-link nedenfor indtil videre.",
+    imageUploadTitle: "Upload billeder",
+    imageUploadHelp: "Upload op til 3 tydelige billeder, så andre lettere kan genkende genstanden.",
     imageUrlPlaceholder: "Indsæt billede-link",
     officialReminder: "Vigtige genstande som pas, ID-kort og bankkort bør også anmeldes til dansk politi (114).",
     privacyReminder: "Privatlivspåmindelse: skriv ikke CPR-numre, pasnumre, kortnumre eller andre følsomme personoplysninger.",
@@ -249,7 +261,7 @@ const translations = {
     manageCodePlaceholder: "Administrationskode, fx 1234",
     manageCodeHelp: "Brug denne kode senere til at markere opslaget som løst eller genåbne det.",
     wrongManageCode: "Forkert administrationskode.",
-    savedLocally: "Opslag gemmes lokalt i denne browser i denne prototype.",
+    savedLocally: "Opslag gemmes sikkert i skyen og synkroniseres på tværs af enheder.",
     chooseImage: "Vælg billeder",
     imageCount: "Op til 3 billeder",
     nextImage: "Næste",
@@ -262,18 +274,18 @@ const translations = {
     editPost: "Rediger opslag",
     saveChanges: "Gem ændringer",
     editedSuccessfully: "Opslaget er opdateret",
-    editedHelp: "Dine ændringer er gemt i denne browserprototype.",
+    editedHelp: "Dine ændringer er gemt sikkert i skyen.",
     deletePost: "Slet opslag",
     confirmDeleteTitle: "Slet dette opslag?",
     confirmDeleteButton: "Ja, slet permanent",
     confirmDeleteHelp: "Dette kan ikke fortrydes i denne prototype.",
     cancel: "Annuller",
     deletedSuccessfully: "Opslaget er slettet",
-    deletedHelp: "Opslaget er fjernet fra denne browserprototype.",
+    deletedHelp: "Opslaget er fjernet fra den offentlige opslagstavle.",
     reportPost: "Anmeld opslag",
     reportTitle: "Anmeld dette opslag",
     reportReason: "Årsag til anmeldelse",
-    reportHelp: "Prototype: i den rigtige version vil anmeldelser blive gennemgået af moderatorer.",
+    reportHelp: "Tak. Anmeldelser kan gennemgås af moderatorer for at holde fællesskabet sikkert.",
     reportSent: "Anmeldelse sendt",
     reportMissingReason: "Indtast venligst en årsag til anmeldelsen.",
     savePost: "Gem opslag",
@@ -591,6 +603,8 @@ export default function LostAndFoundDK() {
   const [contactForm, setContactForm] = useState({ name: "", email: "", message: "" });
   const [contactError, setContactError] = useState("");
   const [showMessageSent, setShowMessageSent] = useState(false);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [showMessages, setShowMessages] = useState(false);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [formError, setFormError] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
@@ -674,6 +688,29 @@ export default function LostAndFoundDK() {
 
   loadPosts();
 }, []);
+
+  useEffect(() => {
+  async function loadMessages() {
+    if (!user) {
+      setMessages([]);
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("messages")
+      .select("*, posts(title)")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Failed to load messages:", error);
+      return;
+    }
+
+    setMessages(data || []);
+  }
+
+  loadMessages();
+}, [user]);
 
   function labelType(type: PostType) {
     return type === "Lost" ? t.lost : t.found;
@@ -765,17 +802,32 @@ async function logout() {
     setSelectedPost((currentPost) => (currentPost && currentPost.id === postId ? { ...currentPost, saved: !currentPost.saved } : currentPost));
   }
 
-  function handleSendContactMessage() {
-    if (!selectedPost) return;
-    if (!contactForm.email.trim() || !contactForm.message.trim()) {
-      setContactError(t.contactMissingFields);
-      return;
-    }
-    setContactError("");
-    setShowMessageSent(true);
-    setContactForm({ name: "", email: "", message: "" });
-    window.setTimeout(() => setShowMessageSent(false), 3000);
+  async function handleSendContactMessage() {
+  if (!selectedPost) return;
+
+  if (!contactForm.email.trim() || !contactForm.message.trim()) {
+    setContactError(t.contactMissingFields);
+    return;
   }
+
+  const { error } = await supabase.from("messages").insert({
+    post_id: selectedPost.id,
+    sender_name: contactForm.name.trim() || null,
+    sender_email: contactForm.email.trim(),
+    message: contactForm.message.trim(),
+  });
+
+  if (error) {
+    console.error("Failed to send message:", error);
+    setContactError("Failed to send message. Please try again.");
+    return;
+  }
+
+  setContactError("");
+  setShowMessageSent(true);
+  setContactForm({ name: "", email: "", message: "" });
+  window.setTimeout(() => setShowMessageSent(false), 3000);
+}
 
   function openReportDialog(post: Post) {
     setReportTarget(post);
@@ -1105,6 +1157,13 @@ for (const image of images.slice(0, 3)) {
             {user ? (
   <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
     <span>{user.email}</span>
+    <button
+  type="button"
+  onClick={() => setShowMessages(true)}
+  className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium hover:bg-slate-50"
+>
+  Messages ({messages.length})
+</button>
     <button type="button" onClick={logout} className="font-semibold hover:underline">
       Logout
     </button>
@@ -1317,6 +1376,15 @@ for (const image of images.slice(0, 3)) {
         <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-5 md:p-6">
           <h2 className="text-2xl font-bold">{t.formTitle}</h2>
           <p className="text-slate-600 mt-2">{t.formHelp}</p>
+          {user ? (
+  <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+    Posting as <span className="font-semibold">{user.email}</span>
+  </div>
+) : (
+  <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+    Please login with your email before posting.
+  </div>
+)}
           <p className="text-sm text-slate-500 mt-2">{t.savedLocally}</p>
           {formError && <div className="mt-5 rounded-2xl border border-rose-200 bg-rose-50 text-rose-700 px-4 py-3 text-sm font-medium">{formError}</div>}
           <PostForm
@@ -1330,6 +1398,44 @@ for (const image of images.slice(0, 3)) {
           />
         </div>
       </section>
+
+      {showMessages && (
+  <SimpleModal
+    title="Messages"
+    subtitle={`${messages.length} message(s)`}
+    closeLabel={t.close}
+    onClose={() => setShowMessages(false)}
+    wide
+  >
+    {messages.length === 0 ? (
+      <p className="mt-4 text-sm text-slate-500">No messages yet.</p>
+    ) : (
+      <div className="mt-5 grid gap-3">
+        {messages.map((message) => (
+          <div key={message.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <p className="text-sm text-slate-500">
+              About: <span className="font-medium text-slate-700">{message.posts?.title || "Post"}</span>
+            </p>
+            <p className="mt-2 text-sm text-slate-500">
+              From: <span className="font-medium text-slate-700">{message.sender_name || "Anonymous"}</span>{" "}
+              &lt;{message.sender_email}&gt;
+            </p>
+            <p className="mt-3 text-slate-800 leading-6">{message.message}</p>
+            <p className="mt-3 text-xs text-slate-400">
+              {new Date(message.created_at).toLocaleString()}
+            </p>
+           <a
+  href={`mailto:${message.sender_email}?subject=Re: LostAndFoundDK - ${message.posts?.title || "your message"}`}
+  className="mt-4 inline-flex rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
+>
+  Reply by email
+</a> 
+          </div>
+        ))}
+      </div>
+    )}
+  </SimpleModal>
+)}
 
       {showSuccess && <SuccessModal title={successTitle || t.postedSuccessfully} help={successHelp || t.postedHelp} closeLabel={t.close} onClose={() => setShowSuccess(false)} />}
       {reportTarget && (
