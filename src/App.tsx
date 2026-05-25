@@ -1206,7 +1206,7 @@ for (const image of images.slice(0, 3)) {
           </div>
           <h2 className="text-4xl md:text-5xl font-bold tracking-tight leading-tight">{t.heroTitle}</h2>
           <p className="mt-5 text-lg text-slate-600 leading-8">{t.heroText}</p>
-          <div className="mt-6 grid sm:grid-cols-3 gap-3">
+          <div className="mt-5 grid sm:grid-cols-3 gap-2 max-w-xl">
             <Feature icon={<MapPin size={18} />} title={t.cityBoards} text={t.cityBoardsText} />
             <Feature icon={<ShieldCheck size={18} />} title={t.safetyFirst} text={t.safetyFirstText} />
             <Feature icon={<Upload size={18} />} title={t.easyPosting} text={t.easyPostingText} />
@@ -1563,10 +1563,10 @@ for (const image of images.slice(0, 3)) {
 
 function Feature({ icon, title, text }: { icon: React.ReactNode; title: string; text: string }) {
   return (
-    <div className="rounded-2xl bg-white border border-slate-200 p-4 shadow-sm">
-      <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center mb-3">{icon}</div>
-      <h3 className="font-semibold">{title}</h3>
-      <p className="text-sm text-slate-500 mt-1 leading-5">{text}</p>
+    <div className="rounded-xl bg-white border border-slate-200 p-3 shadow-sm">
+      <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center mb-2">{icon}</div>
+      <h3 className="text-sm font-semibold">{title}</h3>
+      <p className="text-xs text-slate-500 mt-1 leading-5">{text}</p>
     </div>
   );
 }
