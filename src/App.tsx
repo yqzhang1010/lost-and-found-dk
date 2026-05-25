@@ -1374,33 +1374,30 @@ for (const image of images.slice(0, 3)) {
       </section>
 
       {showPostForm && (
-        <section id="post" className="max-w-6xl mx-auto px-4 pb-16">
-        <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-5 md:p-6">
-          <h2 className="text-2xl font-bold">{t.formTitle}</h2>
-          <p className="text-slate-600 mt-2">{t.formHelp}</p>
-          {user ? (
-  <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-    Posting as <span className="font-semibold">{user.email}</span>
-  </div>
-) : (
-  <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-    Please login with your email before posting.
-  </div>
+  <SimpleModal
+    title={t.formTitle}
+    subtitle={user ? `Posting as ${user.email}` : "Please login with your email before posting."}
+    closeLabel={t.close}
+    onClose={() => setShowPostForm(false)}
+    wide
+  >
+    {formError && (
+      <div className="mt-5 rounded-2xl border border-rose-200 bg-rose-50 text-rose-700 px-4 py-3 text-sm font-medium">
+        {formError}
+      </div>
+    )}
+
+    <PostForm
+      form={form}
+      setForm={setForm}
+      t={t}
+      onSubmit={handleSubmit}
+      onImageFiles={(files) => handleFiles(files, setForm)}
+      submitLabel={t.submit}
+      hideManageCode
+    />
+  </SimpleModal>
 )}
-          <p className="text-sm text-slate-500 mt-2">{t.savedLocally}</p>
-          {formError && <div className="mt-5 rounded-2xl border border-rose-200 bg-rose-50 text-rose-700 px-4 py-3 text-sm font-medium">{formError}</div>}
-          <PostForm
-            form={form}
-            setForm={setForm}
-            t={t}
-            onSubmit={handleSubmit}
-            onImageFiles={(files) => handleFiles(files, setForm)}
-            submitLabel={t.submit}
-            hideManageCode
-          />
-        </div>
-      </section>
-      )}
 
       {showMessages && (
   <SimpleModal
