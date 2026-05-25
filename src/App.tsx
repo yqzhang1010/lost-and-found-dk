@@ -625,6 +625,7 @@ export default function LostAndFoundDK() {
   const [loginMessage, setLoginMessage] = useState("");
   const [sendingLogin, setSendingLogin] = useState(false);
   const [loginCooldown, setLoginCooldown] = useState(0);
+  const [showPostForm, setShowPostForm] = useState(false);
 
   const cityOptions = ["All cities", ...cities];
   const categoryOptions = ["All categories", ...categories];
@@ -1125,6 +1126,7 @@ for (const image of images.slice(0, 3)) {
     setPosts([savedPost, ...posts]);
     setForm(emptyForm);
     setFormError("");
+    setShowPostForm(false);
     setSuccessTitle(t.postedSuccessfully);
     setSuccessHelp(t.postedHelp);
     setShowSuccess(true);
@@ -1151,9 +1153,13 @@ for (const image of images.slice(0, 3)) {
               <button type="button" onClick={() => setLang("en")} className={`px-3 py-1.5 rounded-lg text-sm font-medium ${lang === "en" ? "bg-slate-900 text-white" : "text-slate-600"}`}>EN</button>
               <button type="button" onClick={() => setLang("da")} className={`px-3 py-1.5 rounded-lg text-sm font-medium ${lang === "da" ? "bg-slate-900 text-white" : "text-slate-600"}`}>DA</button>
             </div>
-            <a href="#post" className="hidden sm:inline-flex items-center gap-2 rounded-xl bg-slate-900 text-white px-4 py-2 text-sm font-medium shadow-sm hover:bg-slate-700">
+            <button
+              type="button"
+              onClick={() => setShowPostForm(true)}
+              className="hidden sm:inline-flex items-center gap-2 rounded-xl bg-slate-900 text-white px-4 py-2 text-sm font-medium shadow-sm hover:bg-slate-700"
+            >
               <PlusCircle size={18} /> {t.postItem}
-            </a>
+            </button>
             {user ? (
   <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
     <span>{user.email}</span>
