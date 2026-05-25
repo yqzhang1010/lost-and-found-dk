@@ -1561,10 +1561,9 @@ for (const image of images.slice(0, 3)) {
   );
 }
 
-function Feature({ icon, title, text }: { icon: React.ReactNode; title: string; text: string }) {
+function Feature({ title, text }: { icon?: React.ReactNode; title: string; text: string }) {
   return (
     <div className="rounded-xl bg-white border border-slate-200 p-3 shadow-sm">
-      <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center mb-2">{icon}</div>
       <h3 className="text-sm font-semibold">{title}</h3>
       <p className="text-xs text-slate-500 mt-1 leading-5">{text}</p>
     </div>
