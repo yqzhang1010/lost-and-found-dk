@@ -1199,7 +1199,7 @@ for (const image of images.slice(0, 3)) {
       </section>
       
 
-      <section className="max-w-6xl mx-auto px-4 py-10 grid lg:grid-cols-2 gap-8 items-center">
+      <section className="max-w-6xl mx-auto px-4 py-6 grid lg:grid-cols-2 gap-6 items-center">
         <div>
           <div className="inline-flex items-center gap-2 rounded-full bg-white border border-slate-200 px-3 py-1 text-sm text-slate-600 mb-5">
             <Globe2 size={16} /> {t.languageBadge}
@@ -1207,7 +1207,7 @@ for (const image of images.slice(0, 3)) {
           <h2 className="text-4xl md:text-5xl font-bold tracking-tight leading-tight">{t.heroTitle}</h2>
           <p className="mt-5 text-lg text-slate-600 leading-8">{t.heroText}</p>
           </div>
-        <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-5">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
           <div className="rounded-2xl bg-slate-100 p-5">
             <p className="text-sm font-semibold text-slate-500 mb-2">{t.examplePost}</p>
             <h3 className="text-xl font-bold">{t.exampleTitle}</h3>
