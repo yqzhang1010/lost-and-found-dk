@@ -1155,20 +1155,20 @@ for (const image of images.slice(0, 3)) {
   const currentSelectedImage = selectedPost?.images?.[selectedImageIndex] || selectedPost?.image;
 
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-900">
+    <main className="min-h-screen overflow-x-hidden bg-slate-50 text-slate-900">
       <section className="bg-white border-b border-slate-200">
-        <div className="max-w-6xl mx-auto px-4 py-5 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
+        <div className="max-w-6xl mx-auto px-4 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex w-full sm:w-auto items-center gap-3">
             <div className="w-11 h-11 rounded-2xl bg-slate-900 text-white flex items-center justify-center shadow-sm">
               <Search size={23} />
             </div>
             <div>
-              <h1 className="text-2xl font-bold tracking-tight">LostAndFoundDK</h1>
-              <p className="text-sm text-slate-500">{t.tagline}</p>
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight">LostAndFoundDK</h1>
+              <p className="text-xs sm:text-sm text-slate-500">{t.tagline}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="rounded-xl border border-slate-200 p-1 bg-slate-50 flex">
+          <div className="flex w-full sm:w-auto flex-wrap items-center gap-2">
+            <div className="rounded-xl border border-slate-200 p-1 bg-slate-50 flex shrink-0">
               <button type="button" onClick={() => setLang("en")} className={`px-3 py-1.5 rounded-lg text-sm font-medium ${lang === "en" ? "bg-slate-900 text-white" : "text-slate-600"}`}>EN</button>
               <button type="button" onClick={() => setLang("da")} className={`px-3 py-1.5 rounded-lg text-sm font-medium ${lang === "da" ? "bg-slate-900 text-white" : "text-slate-600"}`}>DA</button>
             </div>
@@ -1187,8 +1187,8 @@ for (const image of images.slice(0, 3)) {
               <PlusCircle size={20} /> {t.postItem}
             </button>
             {user ? (
-  <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
-    <span>{user.email}</span>
+  <div className="flex w-full sm:w-auto flex-wrap items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+    <span className="max-w-[220px] truncate">{user.email}</span>
     <button
   type="button"
   onClick={() => setShowMessages(true)}
@@ -1201,9 +1201,9 @@ for (const image of images.slice(0, 3)) {
     </button>
   </div>
 ) : (
-  <div className="relative flex items-center gap-2">
+  <div className="relative flex min-w-0 flex-1 sm:flex-none items-center gap-2">
     <input
-      className="w-48 rounded-xl border border-slate-200 px-3 py-2 text-sm"
+      className="min-w-0 flex-1 sm:w-48 rounded-xl border border-slate-200 px-3 py-2 text-sm"
       placeholder="Email login"
       value={loginEmail}
       onChange={(e) => setLoginEmail(e.target.value)}
@@ -1219,7 +1219,7 @@ for (const image of images.slice(0, 3)) {
     </button>
 
      {loginMessage && (
-      <p className="absolute right-0 top-12 whitespace-nowrap rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800 shadow-sm">
+      <p className="absolute left-0 sm:left-auto sm:right-0 top-12 z-20 whitespace-nowrap rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800 shadow-sm">
         {loginMessage}
       </p>
     )}
