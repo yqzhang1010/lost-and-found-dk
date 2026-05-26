@@ -98,7 +98,7 @@ const translations = {
     contactFormMessage: "Message to poster",
     sendMessage: "Send message",
     messageSent: "Message sent!",
-    messageSentHelp: "Your message has been delivered to the poster securely through LostAndFoundDK.",
+    messageSentHelp: "Your message has been delivered. The poster can reply to you by email.",
     contactPrivacy: "The poster's email is hidden. Messages are sent through the website.",
     close: "Close",
     formTitle: "Post a lost or found item",
@@ -117,6 +117,9 @@ const translations = {
     officialReminder: "Important items like passports, ID cards and bank cards should also be reported to Danish police (114).",
     privacyReminder: "Privacy reminder: do not post CPR numbers, passport numbers, bank card numbers or other sensitive personal information.",
     submit: "Submit post",
+    submitting: "Submitting...",
+    sending: "Sending...",
+    saving: "Saving...",
     footerOfficial: "For official police matters in Denmark, call 114.",
     allCities: "All cities",
     allCategories: "All categories",
@@ -218,7 +221,7 @@ const translations = {
     contactFormMessage: "Besked til opretteren",
     sendMessage: "Send besked",
     messageSent: "Beskeden er sendt!",
-    messageSentHelp: "Din besked er sendt sikkert til opretteren gennem LostAndFoundDK.",
+    messageSentHelp: "Din besked er sendt. Opretteren kan svare dig via e-mail.",
     contactPrivacy: "Opretterens e-mail er skjult. Beskeder sendes gennem hjemmesiden.",
     close: "Luk",
     formTitle: "Opret et opslag om mistet eller fundet ting",
@@ -237,6 +240,9 @@ const translations = {
     officialReminder: "Vigtige genstande som pas, ID-kort og bankkort bør også anmeldes til dansk politi (114).",
     privacyReminder: "Privatlivspåmindelse: skriv ikke CPR-numre, pasnumre, kortnumre eller andre følsomme personoplysninger.",
     submit: "Opret opslag",
+    submitting: "Opretter...",
+    sending: "Sender...",
+    saving: "Gemmer...",
     footerOfficial: "For officielle politisager i Danmark, ring 114.",
     allCities: "Alle byer",
     allCategories: "Alle kategorier",
@@ -624,6 +630,9 @@ export default function LostAndFoundDK() {
   const [sendingLogin, setSendingLogin] = useState(false);
   const [loginCooldown, setLoginCooldown] = useState(0);
   const [showPostForm, setShowPostForm] = useState(false);
+  const [submittingPost, setSubmittingPost] = useState(false);
+  const [sendingContactMessage, setSendingContactMessage] = useState(false);
+  const [savingEditedPost, setSavingEditedPost] = useState(false);
 
   const cityOptions = ["All cities", ...cities];
   const categoryOptions = ["All categories", ...categories];
@@ -801,12 +810,14 @@ async function logout() {
   }
 
   async function handleSendContactMessage() {
-  if (!selectedPost) return;
+  if (!selectedPost || sendingContactMessage) return;
 
   if (!contactForm.email.trim() || !contactForm.message.trim()) {
     setContactError(t.contactMissingFields);
     return;
   }
+
+  setSendingContactMessage(true);
 
   const { error } = await supabase.from("messages").insert({
     post_id: selectedPost.id,
@@ -814,6 +825,8 @@ async function logout() {
     sender_email: contactForm.email.trim(),
     message: contactForm.message.trim(),
   });
+
+  setSendingContactMessage(false);
 
   if (error) {
     console.error("Failed to send message:", error);
@@ -933,7 +946,7 @@ async function logout() {
 
   async function saveEditedPost(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (!editingPost) return;
+    if (!editingPost || savingEditedPost) return;
     if (!editForm.title.trim() || !editForm.description.trim() || !editForm.contact.trim()) {
       setEditError(t.missingFields);
       return;
@@ -957,6 +970,8 @@ async function logout() {
       return;
     }
 
+    setSavingEditedPost(true);
+
     const { error } = await supabase
       .from("posts")
       .update({
@@ -974,9 +989,11 @@ async function logout() {
     if (error) {
       console.error("Failed to edit post:", error);
       alert("Failed to edit post. Check console.");
+      setSavingEditedPost(false);
       return;
     }
 
+    setSavingEditedPost(false);
     setPosts((currentPosts) => currentPosts.map((post) => (post.id === editingPost.id ? updatedPost : post)));
     setSelectedPost((currentPost) => (currentPost && currentPost.id === editingPost.id ? updatedPost : currentPost));
     setEditingPost(null);
@@ -1023,6 +1040,7 @@ async function logout() {
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (submittingPost) return;
     if (!form.title.trim() || !form.description.trim()) {
       setFormError(t.missingFields);
       return;
@@ -1031,6 +1049,7 @@ async function logout() {
   setFormError("Please login with your email before posting.");
   return;
 }
+    setSubmittingPost(true);
     const finalCity = form.city === "Other / Anden by" && form.customCity.trim() ? form.customCity.trim() : form.city;
     const images = form.images.length ? form.images : form.image ? [form.image] : [];
     const uploadedImageUrls: string[] = [];
@@ -1052,6 +1071,7 @@ for (const image of images.slice(0, 3)) {
     if (uploadError) {
       console.error("Failed to upload image:", uploadError);
       alert("Failed to upload image. Check console.");
+      setSubmittingPost(false);
       return;
     }
 
@@ -1101,6 +1121,7 @@ for (const image of images.slice(0, 3)) {
     if (error) {
       console.error("Failed to save post:", error);
       alert("Failed to save post. Check console.");
+      setSubmittingPost(false);
       return;
     }
 
@@ -1120,6 +1141,7 @@ for (const image of images.slice(0, 3)) {
       }
     }
 
+    setSubmittingPost(false);
     setPosts([savedPost, ...posts]);
     setForm(emptyForm);
     setFormError("");
@@ -1387,6 +1409,11 @@ for (const image of images.slice(0, 3)) {
         {formError}
       </div>
     )}
+    {submittingPost && (
+      <div className="mt-5 rounded-2xl border border-blue-200 bg-blue-50 text-blue-700 px-4 py-3 text-sm font-medium">
+        Uploading images and publishing your post...
+      </div>
+    )}
 
     <PostForm
       form={form}
@@ -1394,7 +1421,8 @@ for (const image of images.slice(0, 3)) {
       t={t}
       onSubmit={handleSubmit}
       onImageFiles={(files) => handleFiles(files, setForm)}
-      submitLabel={t.submit}
+      submitLabel={submittingPost ? t.submitting : t.submit}
+      disabled={submittingPost}
       hideManageCode
       hideContact
     />
@@ -1458,7 +1486,8 @@ for (const image of images.slice(0, 3)) {
             t={t}
             onSubmit={saveEditedPost}
             onImageFiles={(files) => handleFiles(files, setEditForm)}
-            submitLabel={t.saveChanges}
+            submitLabel={savingEditedPost ? t.saving : t.saveChanges}
+            disabled={savingEditedPost}
             hideType
             hideDate
             hideManageCode
@@ -1506,8 +1535,8 @@ for (const image of images.slice(0, 3)) {
             <div className="p-6">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="text-sm text-slate-500">{t.contactInfo}</p>
-                  <h3 className="text-xl font-bold mt-1">{selectedPost.title}</h3>
+                  <p className="text-sm text-slate-500">{t.postDetails}</p>
+                  <h3 className="text-2xl font-bold mt-1">{selectedPost.title}</h3>
                 </div>
                 <button type="button" onClick={() => setSelectedPost(null)} className="rounded-xl p-2 hover:bg-slate-100" aria-label={t.close}><X size={20} /></button>
               </div>
@@ -1522,7 +1551,10 @@ for (const image of images.slice(0, 3)) {
                 <p className="text-sm text-slate-700 leading-6">{selectedPost.description}</p>
               </div>
               <div className="mt-5 rounded-2xl bg-slate-50 border border-slate-200 p-4">
-                <p className="text-sm text-slate-500 mb-3">{t.contactPrivacy}</p>
+                <div className="mb-4">
+                  <h4 className="font-semibold text-slate-900">{t.contactPoster}</h4>
+                  <p className="mt-1 text-sm text-slate-500">{t.contactPrivacy}</p>
+                </div>
                 <div className="grid gap-3">
                   <input className="rounded-xl border border-slate-200 px-3 py-3" placeholder={t.contactFormName} value={contactForm.name} onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })} />
                   <input className="rounded-xl border border-slate-200 px-3 py-3" placeholder={t.contactFormEmail} value={contactForm.email} onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })} />
@@ -1530,7 +1562,7 @@ for (const image of images.slice(0, 3)) {
                 </div>
                 {contactError && <p className="mt-3 text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2">{contactError}</p>}
                 {showMessageSent && <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 px-3 py-2 text-sm"><p className="font-medium">{t.messageSent}</p><p className="mt-1">{t.messageSentHelp}</p></div>}
-                <button type="button" onClick={handleSendContactMessage} className="mt-4 w-full rounded-xl bg-slate-900 text-white px-4 py-3 text-sm font-medium hover:bg-slate-700 inline-flex items-center justify-center gap-2"><Mail size={16} /> {t.sendMessage}</button>
+                <button type="button" onClick={handleSendContactMessage} disabled={sendingContactMessage} className="mt-4 w-full rounded-xl bg-slate-900 text-white px-4 py-3 text-sm font-medium hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50 inline-flex items-center justify-center gap-2"><Mail size={16} /> {sendingContactMessage ? t.sending : t.sendMessage}</button>
               </div>
               <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <button type="button" onClick={() => toggleSaved(selectedPost.id)} className={`w-full rounded-xl border px-4 py-3 text-sm font-medium inline-flex items-center justify-center gap-2 ${selectedPost.saved ? "border-yellow-200 bg-yellow-50 text-yellow-700 hover:bg-yellow-100" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"}`}><Bookmark size={18} /> {selectedPost.saved ? t.savedPost : t.savePost}</button>
@@ -1659,6 +1691,7 @@ function PostForm({
   hideDate = false,
   hideManageCode = false,
   hideContact = false,
+  disabled = false,
 }: {
   form: FormState;
   setForm: React.Dispatch<React.SetStateAction<FormState>>;
@@ -1670,6 +1703,7 @@ function PostForm({
   hideDate?: boolean;
   hideManageCode?: boolean;
   hideContact?: boolean;
+  disabled?: boolean;
 }) {
   const previewImages = form.images.length ? form.images : form.image ? [form.image] : [];
   return (
@@ -1731,7 +1765,7 @@ function PostForm({
         <input className="mt-4 w-full rounded-xl border border-slate-200 px-3 py-3" placeholder={t.imageUrlPlaceholder} value={form.image.startsWith("data:") ? "" : form.image} onChange={(e) => setForm({ ...form, image: e.target.value, images: e.target.value ? [e.target.value] : [] })} />
       </div>
       <textarea className="md:col-span-2 rounded-xl border border-slate-200 px-3 py-3 min-h-28" placeholder={t.descPlaceholder} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
-      <button className="md:col-span-2 rounded-xl bg-slate-900 text-white px-5 py-3 font-medium hover:bg-slate-700" type="submit">{submitLabel}</button>
+      <button className="md:col-span-2 rounded-xl bg-slate-900 text-white px-5 py-3 font-medium hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50" type="submit" disabled={disabled}>{submitLabel}</button>
     </form>
   );
 }
