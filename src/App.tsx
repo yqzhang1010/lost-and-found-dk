@@ -538,6 +538,7 @@ function getRelatedPosts(posts: Post[], selectedPost: Post | null) {
   const strict = posts
     .filter((post) => {
       if (post.id === selectedPost.id) return false;
+      if (post.status === "deleted") return false;
       const sameCity = post.city === selectedPost.city;
       const sameCategory = post.category === selectedPost.category;
       const selectedWords = `${selectedPost.title} ${selectedPost.description}`
@@ -552,7 +553,7 @@ function getRelatedPosts(posts: Post[], selectedPost: Post | null) {
     .slice(0, 3);
 
   const fallback = posts
-    .filter((post) => post.id !== selectedPost.id)
+    .filter((post) => post.id !== selectedPost.id && post.status !== "deleted")
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, 3);
 
