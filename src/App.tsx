@@ -952,8 +952,48 @@ async function logout() {
       setEditError(t.missingFields);
       return;
     }
+
+    if (!isOwner(editingPost)) {
+      showOwnerOnlyMessage();
+      return;
+    }
+
+    setSavingEditedPost(true);
+
     const finalCity = editForm.city === "Other / Anden by" && editForm.customCity.trim() ? editForm.customCity.trim() : editForm.city;
     const images = editForm.images.length ? editForm.images : editForm.image ? [editForm.image] : [];
+    const uploadedImageUrls: string[] = [];
+
+    for (const image of images.slice(0, 3)) {
+      if (image.startsWith("data:")) {
+        const response = await fetch(image);
+        const blob = await response.blob();
+        const filePath = `${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("post-images")
+          .upload(filePath, blob, {
+            contentType: blob.type || "image/jpeg",
+            upsert: false,
+          });
+
+        if (uploadError) {
+          console.error("Failed to upload edited image:", uploadError);
+          alert("Failed to upload image. Check console.");
+          setSavingEditedPost(false);
+          return;
+        }
+
+        const { data: publicUrlData } = supabase.storage
+          .from("post-images")
+          .getPublicUrl(filePath);
+
+        uploadedImageUrls.push(publicUrlData.publicUrl);
+      } else if (image) {
+        uploadedImageUrls.push(image);
+      }
+    }
+
     const updatedPost: Post = {
       ...editingPost,
       title: editForm.title.trim(),
@@ -962,16 +1002,9 @@ async function logout() {
       description: editForm.description.trim(),
       contact: editForm.contact.trim(),
       location: editForm.location.trim(),
-      image: images[0],
-      images,
+      image: uploadedImageUrls[0],
+      images: uploadedImageUrls,
     };
-
-    if (!isOwner(editingPost)) {
-      showOwnerOnlyMessage();
-      return;
-    }
-
-    setSavingEditedPost(true);
 
     const { error } = await supabase
       .from("posts")
@@ -992,6 +1025,35 @@ async function logout() {
       alert("Failed to edit post. Check console.");
       setSavingEditedPost(false);
       return;
+    }
+
+    const { error: deleteImagesError } = await supabase
+      .from("post_images")
+      .delete()
+      .eq("post_id", editingPost.id);
+
+    if (deleteImagesError) {
+      console.error("Failed to remove old post images:", deleteImagesError);
+      alert("Post was updated, but old images could not be replaced. Check console.");
+      setSavingEditedPost(false);
+      return;
+    }
+
+    if (uploadedImageUrls.length > 0) {
+      const { error: imageInsertError } = await supabase.from("post_images").insert(
+        uploadedImageUrls.map((imageUrl, index) => ({
+          post_id: editingPost.id,
+          image_url: imageUrl,
+          sort_order: index,
+        }))
+      );
+
+      if (imageInsertError) {
+        console.error("Failed to save edited post images:", imageInsertError);
+        alert("Post was updated, but images failed. Check console.");
+        setSavingEditedPost(false);
+        return;
+      }
     }
 
     setSavingEditedPost(false);
