@@ -1,8 +1,7 @@
 User-agent: *
 Allow: /
 
-<<<<<<< HEAD
-Sitemap: https://www.lostfounddk.com/sitemap.xml
-=======
-Sitemap: https://www.lostfounddk.com/sitemap.xml
->>>>>>> a7e1980 (Refine hero feature cards)
+Sitemap: https://lostfounddk.com/sitemap.xml
+
+
+
