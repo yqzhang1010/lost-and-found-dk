@@ -24,6 +24,7 @@ import {
 type Language = "en" | "da";
 type PostType = "Lost" | "Found";
 type SortOption = "newest" | "oldest" | "lost" | "found";
+type FooterModal = "about" | "privacy" | "contact" | null;
 
 type Post = {
   id: number | string;
@@ -120,6 +121,8 @@ const translations = {
     submitting: "Submitting...",
     sending: "Sending...",
     saving: "Saving...",
+    copyEmail: "Copy email",
+    emailCopied: "Email copied",
     footerOfficial: "For official police matters in Denmark, call 114.",
     allCities: "All cities",
     allCategories: "All categories",
@@ -194,6 +197,16 @@ const translations = {
     relatedPosts: "Related posts",
     fallbackRelated: "Similar posts are limited, so here are some recent posts you may want to check.",
     posts: "posts",
+    about: "About",
+    privacyPolicy: "Privacy Policy",
+    contact: "Contact",
+    aboutTitle: "About LostFoundDK",
+    aboutText: "LostFoundDK is a community lost and found board for Denmark. It helps people post and find lost items by city, category, date and location.",
+    privacyTitle: "Privacy Policy",
+    privacyText: "Posters\' email addresses are not shown publicly. Messages are sent through the website. Please do not post CPR numbers, passport numbers, bank card numbers or other sensitive personal information.",
+    contactTitle: "Contact",
+    contactText: "For questions or feedback, contact us at:",
+    contactEmail: "contact@lostfounddk.com",
   },
   da: {
     tagline: "En simpel fælles opslagstavle for hittegods i Danmark",
@@ -243,6 +256,8 @@ const translations = {
     submitting: "Opretter...",
     sending: "Sender...",
     saving: "Gemmer...",
+    copyEmail: "Kopiér e-mail",
+    emailCopied: "E-mail kopieret",
     footerOfficial: "For officielle politisager i Danmark, ring 114.",
     allCities: "Alle byer",
     allCategories: "Alle kategorier",
@@ -317,6 +332,16 @@ const translations = {
     relatedPosts: "Relaterede opslag",
     fallbackRelated: "Der er få lignende opslag, så her er nogle nyere opslag, du måske vil tjekke.",
     posts: "opslag",
+    about: "Om",
+    privacyPolicy: "Privatlivspolitik",
+    contact: "Kontakt",
+    aboutTitle: "Om LostFoundDK",
+    aboutText: "LostFoundDK er en fælles opslagstavle for mistede og fundne genstande i Danmark. Den hjælper folk med at oprette og finde opslag efter by, kategori, dato og sted.",
+    privacyTitle: "Privatlivspolitik",
+    privacyText: "Opretternes e-mailadresser vises ikke offentligt. Beskeder sendes gennem hjemmesiden. Skriv ikke CPR-numre, pasnumre, kortnumre eller andre følsomme personoplysninger.",
+    contactTitle: "Kontakt",
+    contactText: "Har du spørgsmål eller feedback, kan du kontakte os på:",
+    contactEmail: "contact@lostfounddk.com",
   },
 } as const;
 
@@ -631,6 +656,7 @@ export default function LostAndFoundDK() {
   const [sendingLogin, setSendingLogin] = useState(false);
   const [loginCooldown, setLoginCooldown] = useState(0);
   const [showPostForm, setShowPostForm] = useState(false);
+  const [footerModal, setFooterModal] = useState<FooterModal>(null);
   const [submittingPost, setSubmittingPost] = useState(false);
   const [sendingContactMessage, setSendingContactMessage] = useState(false);
   const [savingEditedPost, setSavingEditedPost] = useState(false);
@@ -1517,12 +1543,16 @@ for (const image of images.slice(0, 3)) {
             <p className="mt-3 text-xs text-slate-400">
               {new Date(message.created_at).toLocaleString()}
             </p>
-           <a
-  href={`mailto:${message.sender_email}?subject=Re: LostFoundDK - ${message.posts?.title || "your message"}`}
+           <button
+  type="button"
+  onClick={async () => {
+    await navigator.clipboard.writeText(message.sender_email);
+    alert(t.emailCopied);
+  }}
   className="mt-4 inline-flex rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
 >
-  Copy email
-</a> 
+  {t.copyEmail}
+</button> 
           </div>
         ))}
       </div>
@@ -1648,10 +1678,46 @@ for (const image of images.slice(0, 3)) {
         </div>
       )}
 
+      {footerModal && (
+        <SimpleModal
+          title={
+            footerModal === "about"
+              ? t.aboutTitle
+              : footerModal === "privacy"
+                ? t.privacyTitle
+                : t.contactTitle
+          }
+          closeLabel={t.close}
+          onClose={() => setFooterModal(null)}
+        >
+          {footerModal === "about" && (
+            <p className="mt-4 text-slate-600 leading-7">{t.aboutText}</p>
+          )}
+          {footerModal === "privacy" && (
+            <p className="mt-4 text-slate-600 leading-7">{t.privacyText}</p>
+          )}
+          {footerModal === "contact" && (
+            <div className="mt-4 text-slate-600 leading-7">
+              <p>{t.contactText}</p>
+              <a href={`mailto:${t.contactEmail}`} className="mt-2 inline-flex font-semibold text-slate-900 hover:underline">
+                {t.contactEmail}
+              </a>
+            </div>
+          )}
+        </SimpleModal>
+      )}
+
       <footer className="border-t border-slate-200 bg-white">
-        <div className="max-w-6xl mx-auto px-4 py-6 text-sm text-slate-500 flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
-          <p>© 2026 LostFoundDK. Community prototype.</p>
-          <p className="flex items-center gap-2"><Phone size={15} /> {t.footerOfficial}</p>
+        <div className="max-w-6xl mx-auto px-4 py-6 text-sm text-slate-500 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-2">
+            <p>© 2026 LostFoundDK. Community prototype.</p>
+            <p className="flex items-center gap-2"><Phone size={15} /> {t.footerOfficial}</p>
+          </div>
+          <div className="flex flex-wrap gap-4">
+            <button type="button" onClick={() => setFooterModal("about")} className="hover:text-slate-900 hover:underline">{t.about}</button>
+            <button type="button" onClick={() => setFooterModal("privacy")} className="hover:text-slate-900 hover:underline">{t.privacyPolicy}</button>
+            <button type="button" onClick={() => setFooterModal("contact")} className="hover:text-slate-900 hover:underline">{t.contact}</button>
+          </div>
         </div>
       </footer>
     </main>
