@@ -1435,7 +1435,14 @@ for (const image of images.slice(0, 3)) {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredPosts.map((post) => (
-              <article key={post.id} className="rounded-2xl overflow-hidden border border-slate-200 hover:shadow-sm transition bg-white">
+              <article
+                key={post.id}
+                className={`rounded-2xl overflow-hidden border border-slate-200 hover:shadow-sm transition ${
+                  post.resolved
+                    ? "bg-emerald-50 border-emerald-200"
+                    : "bg-white"
+                }`}
+              >
                 {(post.images?.[0] || post.image) && (
                   <button type="button" onClick={() => openPost(post)} className="block w-full text-left group" aria-label={`Open ${post.title}`}>
                     <img src={post.images?.[0] || post.image} alt={post.title} className="w-full h-44 object-cover transition group-hover:scale-[1.02]" />
@@ -1463,7 +1470,11 @@ for (const image of images.slice(0, 3)) {
                   <div className="mt-4 flex flex-wrap gap-2">
                     {isArchived(post) && <Badge>{t.archived}</Badge>}
                     {post.saved && <Badge><Bookmark size={16} /> {t.savedPost}</Badge>}
-                    {post.resolved && <Badge><CheckCircle2 size={16} /> {t.resolved}</Badge>}
+                    {post.resolved && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-sm font-semibold text-emerald-800 border border-emerald-200">
+                        <CheckCircle2 size={16} /> {t.resolved}
+                      </span>
+                    )}
                   </div>
                   <button type="button" onClick={() => openPost(post)} className="mt-4 flex items-center gap-2 text-sm font-medium text-slate-900 hover:underline">
                     <Mail size={16} /> {t.contactPoster}
