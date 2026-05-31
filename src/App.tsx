@@ -1710,7 +1710,7 @@ for (const image of images.slice(0, 3)) {
       <footer className="border-t border-slate-200 bg-white">
         <div className="max-w-6xl mx-auto px-4 py-6 text-sm text-slate-500 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-2">
-            <p>© 2026 LostFoundDK. Community prototype.</p>
+            <p>© 2026 LostFoundDK. Community lost and found platform for Denmark.</p>
             <p className="flex items-center gap-2"><Phone size={15} /> {t.footerOfficial}</p>
           </div>
           <div className="flex flex-wrap gap-4">
