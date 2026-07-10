@@ -31,6 +31,8 @@ type Post = {
   user_id?: string;
   status?: "open" | "resolved" | "archived" | "deleted";
   saved?: boolean;
+  /** ISO timestamp of when the post was created (from the database). Used for sorting and archiving. */
+  createdAt?: string;
   type: PostType;
   title: string;
   city: string;
@@ -398,8 +400,8 @@ const cities = [
   "Other / Anden by",
 ];
 
-const STORAGE_KEY = "lost-and-found-dk-posts-v1";
 const ARCHIVE_AFTER_DAYS = 90;
+const SAVED_POSTS_STORAGE_KEY = "lostfounddk.savedPostIds";
 
 const samplePosts: Post[] = [
   {
@@ -467,25 +469,15 @@ const emptyForm: FormState = {
   manageCode: "",
 };
 
-function normalizePost(post: Post): Post {
-  const images = post.images?.length ? post.images : post.image ? [post.image] : [];
-  return {
-    ...post,
-    image: post.image || images[0],
-    images,
-    manageCode: post.manageCode || "1234",
-    resolved: Boolean(post.resolved),
-    saved: Boolean(post.saved),
-  };
-}
-
 function mapSupabasePost(row: any): Post {
-  const imageRows = Array.isArray(row.post_images) ? row.post_images : [];
+  const imageRows = Array.isArray(row.post_images) ? [...row.post_images] : [];
+  imageRows.sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
   const images = imageRows
     .map((imageRow: any) => imageRow.image_url)
     .filter(Boolean);
 
   const primaryImage = images[0];
+  const createdDate = row.created_at ? String(row.created_at).slice(0, 10) : new Date().toISOString().slice(0, 10);
 
   return {
     id: row.id,
@@ -495,14 +487,16 @@ function mapSupabasePost(row: any): Post {
     title: row.title,
     city: row.city,
     category: row.category,
-    date: row.created_at ? String(row.created_at).slice(0, 10) : new Date().toISOString().slice(0, 10),
+    // The lost/found date the poster chose; falls back to creation date for old rows.
+    date: row.event_date ? String(row.event_date).slice(0, 10) : createdDate,
+    createdAt: row.created_at || undefined,
     description: row.description,
-    contact: row.contact_email || "",
+    // Contact email is intentionally NOT fetched publicly; messaging goes through the site.
+    contact: "",
     location: row.location || "",
     resolved: row.status === "resolved",
     image: primaryImage,
     images,
-    manageCode: row.manage_token_hash || "auth-owner",
   };
 }
 
@@ -512,22 +506,31 @@ function daysBetween(dateString: string, now = new Date()) {
   return Math.floor((today.getTime() - postDate.getTime()) / (1000 * 60 * 60 * 24));
 }
 
+// Archive based on when the post was CREATED, not the event date the poster chose.
+// Otherwise a fresh post about an item lost 4 months ago would be hidden immediately.
 function isArchived(post: Post, now = new Date()) {
-  return daysBetween(post.date, now) > ARCHIVE_AFTER_DAYS;
+  const reference = post.createdAt ? String(post.createdAt).slice(0, 10) : post.date;
+  return daysBetween(reference, now) > ARCHIVE_AFTER_DAYS;
+}
+
+// Sort by creation time so every browser sees the exact same order,
+// falling back to the event date for posts without a timestamp (e.g. sample data in tests).
+function postTime(post: Post) {
+  return new Date(post.createdAt || post.date).getTime();
 }
 
 function sortPosts(postsToSort: Post[], sortBy: SortOption) {
   const sortedPosts = [...postsToSort];
   switch (sortBy) {
     case "oldest":
-      return sortedPosts.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      return sortedPosts.sort((a, b) => postTime(a) - postTime(b));
     case "lost":
-      return sortedPosts.sort((a, b) => (a.type === b.type ? new Date(b.date).getTime() - new Date(a.date).getTime() : a.type === "Lost" ? -1 : 1));
+      return sortedPosts.sort((a, b) => (a.type === b.type ? postTime(b) - postTime(a) : a.type === "Lost" ? -1 : 1));
     case "found":
-      return sortedPosts.sort((a, b) => (a.type === b.type ? new Date(b.date).getTime() - new Date(a.date).getTime() : a.type === "Found" ? -1 : 1));
+      return sortedPosts.sort((a, b) => (a.type === b.type ? postTime(b) - postTime(a) : a.type === "Found" ? -1 : 1));
     case "newest":
     default:
-      return sortedPosts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      return sortedPosts.sort((a, b) => postTime(b) - postTime(a));
   }
 }
 
@@ -574,12 +577,12 @@ function getRelatedPosts(posts: Post[], selectedPost: Post | null) {
       const hasSimilarKeyword = selectedWords.some((word) => postText.includes(word));
       return sameCity || sameCategory || hasSimilarKeyword;
     })
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .sort((a, b) => postTime(b) - postTime(a))
     .slice(0, 3);
 
   const fallback = posts
     .filter((post) => post.id !== selectedPost.id && post.status !== "deleted")
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .sort((a, b) => postTime(b) - postTime(a))
     .slice(0, 3);
 
   return { strict, fallback, related: strict.length > 0 ? strict : fallback };
@@ -611,14 +614,21 @@ try {
 export default function LostAndFoundDK() {
   const [lang, setLang] = useState<Language>("en");
   const t = translations[lang];
-  const [posts, setPosts] = useState<Post[]>(() => {
+  // Supabase is the single source of truth for public posts.
+  // Do not initialize posts from localStorage, because each browser has its own cache.
+  const [posts, setPosts] = useState<Post[]>([]);
+  // Saved bookmarks are a personal, per-browser preference (unlike posts, which live in Supabase).
+  // Kept in localStorage so they survive reloads and realtime refreshes.
+  const [savedIds, setSavedIds] = useState<Set<string>>(() => {
     try {
-      const savedPosts = window.localStorage.getItem(STORAGE_KEY);
-      return savedPosts ? JSON.parse(savedPosts).map(normalizePost) : samplePosts.map(normalizePost);
+      const raw = window.localStorage.getItem(SAVED_POSTS_STORAGE_KEY);
+      return new Set<string>(raw ? JSON.parse(raw) : []);
     } catch {
-      return samplePosts.map(normalizePost);
+      return new Set<string>();
     }
   });
+  const [loadingPosts, setLoadingPosts] = useState(true);
+  const [postsError, setPostsError] = useState("");
   const [city, setCity] = useState("All cities");
   const [category, setCategory] = useState("All categories");
   const [query, setQuery] = useState("");
@@ -647,6 +657,7 @@ export default function LostAndFoundDK() {
   const [reportTarget, setReportTarget] = useState<Post | null>(null);
   const [reportReason, setReportReason] = useState("");
   const [reportError, setReportError] = useState("");
+  const [submittingReport, setSubmittingReport] = useState(false);
   const [editingPost, setEditingPost] = useState<Post | null>(null);
   const [editForm, setEditForm] = useState<FormState>(emptyForm);
   const [editError, setEditError] = useState("");
@@ -664,15 +675,16 @@ export default function LostAndFoundDK() {
   const cityOptions = ["All cities", ...cities];
   const categoryOptions = ["All categories", ...categories];
   const filteredPosts = useMemo(() => {
+    const postsWithSaved = posts.map((post) => ({ ...post, saved: savedIds.has(String(post.id)) }));
     const basePosts = showMyPostsOnly && user
-      ? posts.filter((post) => post.user_id === user.id)
-      : posts;
+      ? postsWithSaved.filter((post) => post.user_id === user.id)
+      : postsWithSaved;
 
     return sortPosts(
       filterPosts(basePosts, { city, category, query, showResolved, showArchived, showSavedOnly }),
       sortBy
     );
-  }, [posts, city, category, query, showResolved, showArchived, showSavedOnly, sortBy, showMyPostsOnly, user]);
+  }, [posts, savedIds, city, category, query, showResolved, showArchived, showSavedOnly, sortBy, showMyPostsOnly, user]);
   const totalPosts = posts.length;
   const resolvedPosts = posts.filter((post) => post.resolved).length;
   const activeCities = new Set(posts.map((post) => post.city)).size;
@@ -682,14 +694,6 @@ export default function LostAndFoundDK() {
     .sort((a, b) => b.count - a.count)
     .slice(0, 6);
   const { strict: strictRelatedPosts, related: relatedPosts } = getRelatedPosts(posts, selectedPost);
-
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(posts));
-    } catch {
-      // LocalStorage can fail in restricted preview environments.
-    }
-  }, [posts]);
 
   useEffect(() => {
   supabase.auth.getUser().then(({ data }) => {
@@ -706,22 +710,56 @@ export default function LostAndFoundDK() {
 }, []);
 
   useEffect(() => {
-  async function loadPosts() {
-    const { data, error } = await supabase
-      .from("posts")
-      .select("*, post_images(*)")
-      .order("created_at", { ascending: false });
+    let cancelled = false;
 
-    if (error) {
-      console.error("Failed to load posts:", error);
-      return;
+    async function loadPosts(showLoading = false) {
+      if (showLoading) setLoadingPosts(true);
+      setPostsError("");
+
+      // Only fetch public columns. contact_email and manage_token_hash must never
+      // be sent to visitors' browsers - contact goes through the messages table.
+      const { data, error } = await supabase
+        .from("posts")
+        .select("id, user_id, type, title, description, city, location, category, status, created_at, event_date, post_images(image_url, sort_order)")
+        .neq("status", "deleted")
+        .order("created_at", { ascending: false });
+
+      if (cancelled) return;
+
+      if (error) {
+        console.error("Failed to load posts:", error);
+        setPosts([]);
+        setPostsError(`Failed to load posts: ${error.message}`);
+        setLoadingPosts(false);
+        return;
+      }
+
+      setPosts((data || []).map(mapSupabasePost));
+      setLoadingPosts(false);
     }
 
-    setPosts((data || []).map(mapSupabasePost));
-  }
+    loadPosts(true);
 
-  loadPosts();
-}, []);
+    // Keep different browsers/devices synchronized when posts or images change.
+    const channel = supabase
+      .channel("public-posts-sync")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "posts" },
+        () => loadPosts()
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "post_images" },
+        () => loadPosts()
+      )
+      .subscribe();
+
+    return () => {
+      cancelled = true;
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   useEffect(() => {
   async function loadMessages() {
@@ -730,9 +768,12 @@ export default function LostAndFoundDK() {
       return;
     }
 
+    // Only messages for posts owned by the logged-in user.
+    // RLS on the messages table must enforce the same rule server-side.
     const { data, error } = await supabase
       .from("messages")
-      .select("*, posts(title)")
+      .select("*, posts!inner(title, user_id)")
+      .eq("posts.user_id", user.id)
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -832,8 +873,25 @@ async function logout() {
   }
 
   function toggleSaved(postId: number | string) {
-    setPosts((currentPosts) => currentPosts.map((post) => (post.id === postId ? { ...post, saved: !post.saved } : post)));
-    setSelectedPost((currentPost) => (currentPost && currentPost.id === postId ? { ...currentPost, saved: !currentPost.saved } : currentPost));
+    setSavedIds((current) => {
+      const next = new Set(current);
+      const key = String(postId);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      try {
+        window.localStorage.setItem(SAVED_POSTS_STORAGE_KEY, JSON.stringify([...next]));
+      } catch {
+        // Storage unavailable (private mode etc.) - bookmarks just won't persist.
+      }
+      return next;
+    });
+  }
+
+  function isSaved(postId: number | string) {
+    return savedIds.has(String(postId));
   }
 
   async function handleSendContactMessage() {
@@ -871,14 +929,31 @@ async function logout() {
     setReportTarget(post);
     setReportReason("");
     setReportError("");
+    setSubmittingReport(false);
   }
 
-  function submitReport() {
-    if (!reportTarget) return;
-    if (!reportReason.trim()) {
+  async function submitReport() {
+    if (!reportTarget || submittingReport) return;
+
+    const reason = reportReason.trim();
+    if (!reason) {
       setReportError(t.reportMissingReason);
       return;
     }
+
+    setSubmittingReport(true);
+    const { error } = await supabase.from("reports").insert({
+      post_id: reportTarget.id,
+      reason,
+    });
+    setSubmittingReport(false);
+
+    if (error) {
+      console.error("Failed to submit report:", error);
+      setReportError("Failed to send report. Please try again.");
+      return;
+    }
+
     setReportTarget(null);
     setReportReason("");
     setReportError("");
@@ -974,7 +1049,7 @@ async function logout() {
   async function saveEditedPost(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!editingPost || savingEditedPost) return;
-    if (!editForm.title.trim() || !editForm.description.trim() || !editForm.contact.trim()) {
+    if (!editForm.title.trim() || !editForm.description.trim()) {
       setEditError(t.missingFields);
       return;
     }
@@ -1025,6 +1100,7 @@ async function logout() {
       title: editForm.title.trim(),
       city: finalCity,
       category: editForm.category,
+      date: editForm.date || editingPost.date,
       description: editForm.description.trim(),
       contact: editForm.contact.trim(),
       location: editForm.location.trim(),
@@ -1038,8 +1114,8 @@ async function logout() {
         title: updatedPost.title,
         city: updatedPost.city,
         category: updatedPost.category,
+        event_date: updatedPost.date,
         description: updatedPost.description,
-        contact_email: updatedPost.contact,
         location: updatedPost.location,
         updated_at: new Date().toISOString(),
       })
@@ -1187,9 +1263,8 @@ for (const image of images.slice(0, 3)) {
       resolved: false,
       image: uploadedImageUrls[0],
       images: uploadedImageUrls,
-      manageCode: form.manageCode.trim() || "auth-owner",
     };
-    
+
     const { data: insertedPost, error } = await supabase
       .from("posts")
       .insert({
@@ -1200,11 +1275,12 @@ for (const image of images.slice(0, 3)) {
         city: newPost.city,
         location: newPost.location,
         category: newPost.category,
+        // The date the item was lost/found, as chosen by the poster.
+        event_date: newPost.date,
         contact_email: user.email || newPost.contact,
         status: "open",
-        manage_token_hash: newPost.manageCode,
       })
-      .select()
+      .select("id, created_at")
       .single();
 
     if (error) {
@@ -1214,7 +1290,7 @@ for (const image of images.slice(0, 3)) {
       return;
     }
 
-    const savedPost: Post = { ...newPost, id: insertedPost.id, user_id: user.id, status: "open" };
+    const savedPost: Post = { ...newPost, id: insertedPost.id, user_id: user.id, status: "open", createdAt: insertedPost.created_at };
 
     if (uploadedImageUrls.length > 0) {
       const { error: imageInsertError } = await supabase.from("post_images").insert(
@@ -1231,7 +1307,12 @@ for (const image of images.slice(0, 3)) {
     }
 
     setSubmittingPost(false);
-    setPosts([savedPost, ...posts]);
+    // Realtime may already have reloaded this row before this line runs.
+    // Replace/prepend by ID instead of blindly adding a duplicate.
+    setPosts((currentPosts) => [
+      savedPost,
+      ...currentPosts.filter((post) => String(post.id) !== String(savedPost.id)),
+    ]);
     setForm(emptyForm);
     setFormError("");
     setShowPostForm(false);
@@ -1420,7 +1501,19 @@ for (const image of images.slice(0, 3)) {
           </div>
           <p className="mb-6 text-sm text-slate-500">{t.archivedAfter}</p>
 
-          {filteredPosts.length === 0 && (
+          {loadingPosts && (
+            <div className="mb-6 rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-medium text-blue-700">
+              Loading posts from the server...
+            </div>
+          )}
+
+          {postsError && (
+            <div className="mb-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
+              {postsError}
+            </div>
+          )}
+
+          {!loadingPosts && !postsError && filteredPosts.length === 0 && (
             <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 px-6 py-14 text-center">
               <div className="mx-auto w-14 h-14 rounded-full bg-white border border-slate-200 flex items-center justify-center mb-4">
                 <Search size={28} className="text-slate-400" />
@@ -1576,8 +1669,13 @@ for (const image of images.slice(0, 3)) {
         <SimpleModal title={t.reportTitle} subtitle={reportTarget.title} closeLabel={t.close} onClose={() => setReportTarget(null)}>
           <textarea className="mt-4 w-full rounded-xl border border-slate-200 px-3 py-3 min-h-28 outline-none focus:ring-2 focus:ring-slate-300" placeholder={t.reportReason} value={reportReason} onChange={(e) => { setReportReason(e.target.value); setReportError(""); }} autoFocus />
           {reportError && <p className="mt-3 text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2">{reportError}</p>}
-          <button type="button" onClick={submitReport} className="mt-5 w-full rounded-xl bg-slate-900 text-white px-4 py-3 text-sm font-medium hover:bg-slate-700 inline-flex items-center justify-center gap-2">
-            <Flag size={16} /> {t.reportPost}
+          <button
+            type="button"
+            onClick={submitReport}
+            disabled={submittingReport}
+            className="mt-5 w-full rounded-xl bg-slate-900 text-white px-4 py-3 text-sm font-medium hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50 inline-flex items-center justify-center gap-2"
+          >
+            <Flag size={16} /> {submittingReport ? t.sending : t.reportPost}
           </button>
         </SimpleModal>
       )}
@@ -1595,6 +1693,7 @@ for (const image of images.slice(0, 3)) {
             hideType
             hideDate
             hideManageCode
+            hideContact
           />
         </SimpleModal>
       )}
@@ -1669,7 +1768,7 @@ for (const image of images.slice(0, 3)) {
                 <button type="button" onClick={handleSendContactMessage} disabled={sendingContactMessage} className="mt-4 w-full rounded-xl bg-slate-900 text-white px-4 py-3 text-sm font-medium hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50 inline-flex items-center justify-center gap-2"><Mail size={16} /> {sendingContactMessage ? t.sending : t.sendMessage}</button>
               </div>
               <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <button type="button" onClick={() => toggleSaved(selectedPost.id)} className={`w-full rounded-xl border px-4 py-3 text-sm font-medium inline-flex items-center justify-center gap-2 ${selectedPost.saved ? "border-yellow-200 bg-yellow-50 text-yellow-700 hover:bg-yellow-100" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"}`}><Bookmark size={18} /> {selectedPost.saved ? t.savedPost : t.savePost}</button>
+                <button type="button" onClick={() => toggleSaved(selectedPost.id)} className={`w-full rounded-xl border px-4 py-3 text-sm font-medium inline-flex items-center justify-center gap-2 ${isSaved(selectedPost.id) ? "border-yellow-200 bg-yellow-50 text-yellow-700 hover:bg-yellow-100" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"}`}><Bookmark size={18} /> {isSaved(selectedPost.id) ? t.savedPost : t.savePost}</button>
                 {isOwner(selectedPost) && <button type="button" onClick={() => openManageDialog(selectedPost)} className="w-full rounded-xl border border-slate-200 bg-white text-slate-700 px-4 py-3 text-sm font-medium hover:bg-slate-50 inline-flex items-center justify-center gap-2"><Pencil size={18} /> {t.managePost}</button>}
                 <button type="button" onClick={() => openReportDialog(selectedPost)} className="w-full rounded-xl border border-slate-200 bg-white text-slate-700 px-4 py-3 text-sm font-medium hover:bg-slate-50 inline-flex items-center justify-center gap-2"><Flag size={18} /> {t.reportPost}</button>
               </div>
